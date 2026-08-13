@@ -71,6 +71,8 @@ int main(int argc, char* argv[]) {
 
     BoardRenderer board_renderer(debug_overlay);
 
+    PieceRenderer::load_standard_pieces(assets);
+
     bool running = true;
     while (running) {
         SDL_Event event;
@@ -89,6 +91,7 @@ int main(int argc, char* argv[]) {
         SDL_RenderClear(renderer);
 
         board_renderer.draw(renderer, board_texture);
+        PieceRenderer::draw_starting_position(renderer, assets, board_renderer);
         board_renderer.draw_debug_overlay(renderer);
 
         SDL_RenderPresent(renderer);
