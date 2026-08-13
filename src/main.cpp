@@ -1,3 +1,4 @@
+#include "asset_loader.h"
 #include "boot_splash.h"
 
 #include <iostream>
@@ -44,6 +45,14 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    AssetLoader assets(renderer);
+    if (!assets.load_board()) {
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+
     bool running = true;
     while (running) {
         SDL_Event event;
@@ -53,8 +62,19 @@ int main(int argc, char* argv[]) {
             }
         }
 
+        int width = 0;
+        int height = 0;
+        SDL_GetRendererOutputSize(renderer, &width, &height);
+
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
+
+        SDL_Texture* board = assets.board();
+        if (board) {
+            SDL_Rect dest = {0, 0, width, height};
+            SDL_RenderCopy(renderer, board, nullptr, &dest);
+        }
+
         SDL_RenderPresent(renderer);
     }
 

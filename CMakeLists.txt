@@ -13,6 +13,7 @@ pkg_check_modules(SDL2_TTF REQUIRED IMPORTED_TARGET GLOBAL SDL2_ttf)
 add_executable(chess-boot-loader
     src/main.cpp
     src/boot_splash.cpp
+    src/asset_loader.cpp
 )
 
 target_include_directories(chess-boot-loader PRIVATE include)
