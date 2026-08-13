@@ -1,3 +1,5 @@
+#include "boot_splash.h"
+
 #include <iostream>
 using namespace std;
 
@@ -33,6 +35,13 @@ int main(int argc, char* argv[]) {
         SDL_DestroyWindow(window);
         SDL_Quit();
         return 1;
+    }
+
+    if (!run_boot_splash(renderer, window)) {
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 0;
     }
 
     bool running = true;
