@@ -8,6 +8,7 @@ using namespace std;
 #include <SDL2/SDL.h>
 
 #include <string>
+#include "piece_renderer.h"
 
 bool parse_debug_flag(int argc, char* argv[]) {
     for (int i = 1; i < argc; ++i) {
