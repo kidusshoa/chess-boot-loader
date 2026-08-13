@@ -1,4 +1,5 @@
 #include "asset_loader.h"
+#include "board_renderer.h"
 #include "boot_splash.h"
 
 #include <iostream>
@@ -6,9 +7,19 @@ using namespace std;
 
 #include <SDL2/SDL.h>
 
+#include <string>
+
+bool parse_debug_flag(int argc, char* argv[]) {
+    for (int i = 1; i < argc; ++i) {
+        if (string(argv[i]) == "--debug") {
+            return true;
+        }
+    }
+    return false;
+}
+
 int main(int argc, char* argv[]) {
-    (void)argc;
-    (void)argv;
+    const bool debug_overlay = parse_debug_flag(argc, argv);
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         cerr << "SDL_Init failed: " << SDL_GetError() << "\n";
@@ -53,6 +64,13 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    SDL_Texture* board_texture = assets.board();
+    int texture_width = 0;
+    int texture_height = 0;
+    SDL_QueryTexture(board_texture, nullptr, nullptr, &texture_width, &texture_height);
+
+    BoardRenderer board_renderer(debug_overlay);
+
     bool running = true;
     while (running) {
         SDL_Event event;
@@ -65,15 +83,13 @@ int main(int argc, char* argv[]) {
         int width = 0;
         int height = 0;
         SDL_GetRendererOutputSize(renderer, &width, &height);
+        board_renderer.update_layout(width, height, texture_width, texture_height);
 
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
-        SDL_Texture* board = assets.board();
-        if (board) {
-            SDL_Rect dest = {0, 0, width, height};
-            SDL_RenderCopy(renderer, board, nullptr, &dest);
-        }
+        board_renderer.draw(renderer, board_texture);
+        board_renderer.draw_debug_overlay(renderer);
 
         SDL_RenderPresent(renderer);
     }
