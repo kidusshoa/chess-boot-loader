@@ -1,5 +1,7 @@
 #include "board_renderer.h"
 
+#include "board_layout.h"
+
 #include <iostream>
 using namespace std;
 
@@ -8,11 +10,6 @@ using namespace std;
 #include <algorithm>
 
 namespace {
-
-constexpr float BOARD_INSET_LEFT = 0.04f;
-constexpr float BOARD_INSET_RIGHT = 0.04f;
-constexpr float BOARD_INSET_TOP = 0.14f;
-constexpr float BOARD_INSET_BOTTOM = 0.04f;
 
 TTF_Font* load_debug_font() {
     const char* font_paths[] = {
@@ -77,10 +74,10 @@ void BoardRenderer::update_layout(int window_width, int window_height, int textu
     image_dest_.w = dest_w;
     image_dest_.h = dest_h;
 
-    board_area_.x = image_dest_.x + static_cast<int>(image_dest_.w * BOARD_INSET_LEFT);
-    board_area_.y = image_dest_.y + static_cast<int>(image_dest_.h * BOARD_INSET_TOP);
-    board_area_.w = image_dest_.w - static_cast<int>(image_dest_.w * (BOARD_INSET_LEFT + BOARD_INSET_RIGHT));
-    board_area_.h = image_dest_.h - static_cast<int>(image_dest_.h * (BOARD_INSET_TOP + BOARD_INSET_BOTTOM));
+    board_area_.x = image_dest_.x + static_cast<int>(image_dest_.w * BOARD_GRID_ORIGIN_NORM);
+    board_area_.y = image_dest_.y + static_cast<int>(image_dest_.h * BOARD_GRID_ORIGIN_NORM);
+    board_area_.w = static_cast<int>(image_dest_.w * BOARD_GRID_SIZE_NORM);
+    board_area_.h = static_cast<int>(image_dest_.h * BOARD_GRID_SIZE_NORM);
 
     compute_squares();
 }

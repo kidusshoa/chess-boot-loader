@@ -1,6 +1,8 @@
 #include "asset_loader.h"
 #include "board_renderer.h"
 #include "boot_splash.h"
+#include "chess_board.h"
+#include "piece_renderer.h"
 
 #include <iostream>
 using namespace std;
@@ -8,7 +10,6 @@ using namespace std;
 #include <SDL2/SDL.h>
 
 #include <string>
-#include "piece_renderer.h"
 
 bool parse_debug_flag(int argc, char* argv[]) {
     for (int i = 1; i < argc; ++i) {
@@ -74,6 +75,8 @@ int main(int argc, char* argv[]) {
 
     PieceRenderer::load_standard_pieces(assets);
 
+    ChessBoard chess_board;
+
     bool running = true;
     while (running) {
         SDL_Event event;
@@ -92,7 +95,7 @@ int main(int argc, char* argv[]) {
         SDL_RenderClear(renderer);
 
         board_renderer.draw(renderer, board_texture);
-        PieceRenderer::draw_starting_position(renderer, assets, board_renderer);
+        chess_board.draw(renderer, assets, board_renderer);
         board_renderer.draw_debug_overlay(renderer);
 
         SDL_RenderPresent(renderer);

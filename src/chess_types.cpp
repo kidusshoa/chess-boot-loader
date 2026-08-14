@@ -3,17 +3,17 @@
 const char* piece_asset_file(PieceType type) {
     switch (type) {
         case PieceType::King:
-            return "c.png";
+            return "c.svg";
         case PieceType::Queen:
-            return "java.png";
+            return "java.svg";
         case PieceType::Bishop:
-            return "python.png";
+            return "python.svg";
         case PieceType::Knight:
-            return "javascript.png";
+            return "javascript.svg";
         case PieceType::Rook:
-            return "rust.png";
+            return "rust.svg";
         case PieceType::Pawn:
-            return "go.png";
+            return "go.svg";
         case PieceType::None:
         default:
             return nullptr;

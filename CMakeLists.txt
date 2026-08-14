@@ -16,6 +16,7 @@ add_executable(chess-boot-loader
     src/asset_loader.cpp
     src/board_renderer.cpp
     src/chess_types.cpp
+    src/chess_board.cpp
     src/piece_renderer.cpp
 )
 

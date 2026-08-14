@@ -5,10 +5,21 @@ using namespace std;
 
 #include <SDL2/SDL_image.h>
 
+#include <cstring>
+
 namespace {
 
 constexpr const char* BOARD_PATH = "assets/chess-board-banner-vector.jpg";
 constexpr const char* PIECES_DIR = "assets/pieces/";
+constexpr int SVG_RASTER_SIZE = 256;
+
+bool ends_with(const string& value, const char* suffix) {
+    const size_t suffix_length = strlen(suffix);
+    if (value.size() < suffix_length) {
+        return false;
+    }
+    return value.compare(value.size() - suffix_length, suffix_length, suffix) == 0;
+}
 
 }  // namespace
 
@@ -16,9 +27,13 @@ AssetLoader::AssetLoader(SDL_Renderer* renderer)
     : renderer_(renderer),
       board_texture_(nullptr),
       image_initialized_(false) {
-    const int flags = IMG_INIT_JPG | IMG_INIT_PNG;
+    int flags = IMG_INIT_JPG | IMG_INIT_PNG;
+#ifdef IMG_INIT_SVG
+    flags |= IMG_INIT_SVG;
+#endif
+
     const int initialized = IMG_Init(flags);
-    if ((initialized & flags) != flags) {
+    if ((initialized & (IMG_INIT_JPG | IMG_INIT_PNG)) != (IMG_INIT_JPG | IMG_INIT_PNG)) {
         cerr << "IMG_Init failed: " << IMG_GetError() << "\n";
         return;
     }
@@ -69,7 +84,7 @@ bool AssetLoader::load_piece(const string& filename) {
     }
 
     const string path = string(PIECES_DIR) + filename;
-    SDL_Texture* texture = load_texture_from_file(path);
+    SDL_Texture* texture = load_texture_from_file(path, true);
     if (!texture) {
         cerr << "Failed to load piece asset: " << path << "\n";
         return false;
@@ -91,10 +106,9 @@ SDL_Texture* AssetLoader::piece(const string& filename) const {
     return it->second;
 }
 
-SDL_Texture* AssetLoader::load_texture_from_file(const string& path) {
-    SDL_Surface* surface = IMG_Load(path.c_str());
+SDL_Texture* AssetLoader::load_texture_from_file(const string& path, bool piece_texture) {
+    SDL_Surface* surface = load_surface_from_file(path);
     if (!surface) {
-        cerr << "IMG_Load failed for " << path << ": " << IMG_GetError() << "\n";
         return nullptr;
     }
 
@@ -106,7 +120,36 @@ SDL_Texture* AssetLoader::load_texture_from_file(const string& path) {
         return nullptr;
     }
 
+    if (piece_texture) {
+        SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
+    }
+
     return texture;
+}
+
+SDL_Surface* AssetLoader::load_surface_from_file(const string& path) {
+    SDL_Surface* surface = nullptr;
+
+    if (ends_with(path, ".svg")) {
+#if SDL_IMAGE_VERSION_ATLEAST(2, 6, 0)
+        surface = IMG_LoadSizedSVG(path.c_str(), SVG_RASTER_SIZE, SVG_RASTER_SIZE);
+        if (!surface) {
+            cerr << "IMG_LoadSizedSVG failed for " << path << ": " << IMG_GetError() << "\n";
+        }
+#endif
+        if (!surface) {
+            surface = IMG_Load(path.c_str());
+        }
+    } else {
+        surface = IMG_Load(path.c_str());
+    }
+
+    if (!surface) {
+        cerr << "IMG_Load failed for " << path << ": " << IMG_GetError() << "\n";
+        return nullptr;
+    }
+
+    return surface;
 }
 
 void AssetLoader::free_texture(SDL_Texture*& texture) {

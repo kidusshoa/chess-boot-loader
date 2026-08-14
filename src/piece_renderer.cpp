@@ -173,27 +173,3 @@ void PieceRenderer::draw(
         draw_fallback_label(renderer, square, piece.color, piece.type);
     }
 }
-
-void PieceRenderer::draw_starting_position(
-    SDL_Renderer* renderer,
-    const AssetLoader& assets,
-    const BoardRenderer& board
-) {
-    const PieceType back_rank[] = {
-        PieceType::Rook,
-        PieceType::Knight,
-        PieceType::Bishop,
-        PieceType::Queen,
-        PieceType::King,
-        PieceType::Bishop,
-        PieceType::Knight,
-        PieceType::Rook,
-    };
-
-    for (int file = 0; file < 8; ++file) {
-        draw(renderer, assets, board, {back_rank[file], Color::White}, file, 0);
-        draw(renderer, assets, board, {PieceType::Pawn, Color::White}, file, 1);
-        draw(renderer, assets, board, {PieceType::Pawn, Color::Black}, file, 6);
-        draw(renderer, assets, board, {back_rank[file], Color::Black}, file, 7);
-    }
-}

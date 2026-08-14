@@ -17,9 +17,4 @@ public:
         int file,
         int rank
     );
-    static void draw_starting_position(
-        SDL_Renderer* renderer,
-        const AssetLoader& assets,
-        const BoardRenderer& board
-    );
 };

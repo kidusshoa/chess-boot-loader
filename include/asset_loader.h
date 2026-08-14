@@ -25,6 +25,7 @@ private:
     std::unordered_map<std::string, SDL_Texture*> piece_textures_;
     bool image_initialized_;
 
-    SDL_Texture* load_texture_from_file(const std::string& path);
+    SDL_Surface* load_surface_from_file(const std::string& path);
+    SDL_Texture* load_texture_from_file(const std::string& path, bool piece_texture = false);
     void free_texture(SDL_Texture*& texture);
 };
