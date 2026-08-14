@@ -29,3 +29,12 @@ target_link_libraries(chess-boot-loader PRIVATE
     PkgConfig::SDL2_IMAGE
     PkgConfig::SDL2_TTF
 )
+
+add_custom_command(
+    TARGET chess-boot-loader
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_SOURCE_DIR}/assets
+        $<TARGET_FILE_DIR:chess-boot-loader>/assets
+    COMMENT "Copying assets next to chess-boot-loader binary"
+)

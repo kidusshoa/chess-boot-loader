@@ -5,13 +5,67 @@ using namespace std;
 
 #include <SDL2/SDL_image.h>
 
+#include <cstdlib>
 #include <cstring>
+#include <unistd.h>
 
 namespace {
 
-constexpr const char* BOARD_PATH = "assets/chess-board-banner-vector.jpg";
-constexpr const char* PIECES_DIR = "assets/pieces/";
+constexpr const char* BOARD_FILE = "chess-board-banner-vector.jpg";
 constexpr int SVG_RASTER_SIZE = 256;
+
+const char* ASSET_ROOT_CANDIDATES[] = {
+    "assets",
+    "../assets",
+    "./assets",
+};
+
+bool path_exists(const string& path) {
+    return access(path.c_str(), F_OK) == 0;
+}
+
+string join_path(const string& root, const string& file) {
+    if (root.empty()) {
+        return file;
+    }
+    if (root.back() == '/') {
+        return root + file;
+    }
+    return root + "/" + file;
+}
+
+string detect_assets_root() {
+    const char* env_root = getenv("CHESS_BOOT_LOADER_ASSETS");
+    if (env_root && env_root[0] != '\0') {
+        const string board_path = join_path(env_root, BOARD_FILE);
+        if (path_exists(board_path)) {
+            return env_root;
+        }
+        cerr << "CHESS_BOOT_LOADER_ASSETS is set but board not found at: " << board_path << "\n";
+    }
+
+    for (const char* candidate : ASSET_ROOT_CANDIDATES) {
+        const string board_path = join_path(candidate, BOARD_FILE);
+        if (path_exists(board_path)) {
+            return candidate;
+        }
+    }
+
+    return "assets";
+}
+
+string assets_root() {
+    static const string root = detect_assets_root();
+    return root;
+}
+
+string board_asset_path() {
+    return join_path(assets_root(), BOARD_FILE);
+}
+
+string piece_asset_path(const string& filename) {
+    return join_path(join_path(assets_root(), "pieces"), filename);
+}
 
 bool ends_with(const string& value, const char* suffix) {
     const size_t suffix_length = strlen(suffix);
@@ -39,6 +93,7 @@ AssetLoader::AssetLoader(SDL_Renderer* renderer)
     }
 
     image_initialized_ = true;
+    cout << "Using assets from: " << assets_root() << "\n";
 }
 
 AssetLoader::~AssetLoader() {
@@ -64,9 +119,11 @@ bool AssetLoader::load_board() {
         return true;
     }
 
-    board_texture_ = load_texture_from_file(BOARD_PATH);
+    const string board_path = board_asset_path();
+    board_texture_ = load_texture_from_file(board_path);
     if (!board_texture_) {
-        cerr << "Failed to load board asset: " << BOARD_PATH << "\n";
+        cerr << "Failed to load board asset: " << board_path << "\n";
+        cerr << "Run from the project root, from build/, or set CHESS_BOOT_LOADER_ASSETS\n";
         return false;
     }
 
@@ -83,7 +140,7 @@ bool AssetLoader::load_piece(const string& filename) {
         return true;
     }
 
-    const string path = string(PIECES_DIR) + filename;
+    const string path = piece_asset_path(filename);
     SDL_Texture* texture = load_texture_from_file(path, true);
     if (!texture) {
         cerr << "Failed to load piece asset: " << path << "\n";

@@ -102,20 +102,91 @@ Pass `--debug` to draw square borders and a–h / 1–8 labels over the board, u
 
 ## Build & run
 
-Install dependencies on Linux:
+### Linux
+
+Install dependencies:
 
 ```bash
 sudo apt install build-essential cmake pkg-config \
   libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev librsvg2-dev
 ```
 
-Build and run from the project root:
+Clone, build, and run:
+
+```bash
+git clone <your-repo-url> chess-boot-loader
+cd chess-boot-loader
+./scripts/build-linux.sh
+./build/chess-boot-loader
+```
+
+Or manually:
 
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ./build/chess-boot-loader
 ```
+
+The build copies `assets/` next to the binary automatically, so these all work:
+
+```bash
+./build/chess-boot-loader              # from project root
+cd build && ./chess-boot-loader        # from build directory
+```
+
+### Asset path
+
+Assets are searched in this order:
+
+1. `$CHESS_BOOT_LOADER_ASSETS` (if set)
+2. `assets/` (project root)
+3. `../assets/` (when running from `build/`)
+4. `./assets/` (next to the binary — populated by CMake)
+
+On startup the game prints which asset directory it found, e.g. `Using assets from: assets`.
+
+### Flags
+
+| Flag        | Description                          |
+|-------------|--------------------------------------|
+| `--debug`   | Show square grid overlay             |
+| `--no-boot` | Skip the BIOS boot splash            |
+
+Environment variables:
+
+| Variable                   | Description                    |
+|----------------------------|--------------------------------|
+| `CHESS_BOOT_LOADER_NO_BOOT`| Skip boot splash (`1` to skip) |
+| `CHESS_BOOT_LOADER_ASSETS` | Custom path to assets folder   |
+
+### Troubleshooting on Linux
+
+**Board or pieces not loading**
+- Run from project root or `build/` as shown above
+- Confirm assets exist: `ls assets/pieces/*.svg`
+- Check startup output for `Using assets from: ...`
+
+**SVG icons show text fallback instead**
+- Install SVG support: `sudo apt install librsvg2-dev`
+- Reinstall SDL2_image: `sudo apt install --reinstall libsdl2-image-dev`
+
+**No text in UI or boot splash**
+- Install fonts: `sudo apt install fonts-dejavu fonts-liberation`
+
+**Square grid misaligned with board**
+- Run with `--debug` and verify red grid lines match the board squares
+- Grid bounds are defined in `include/board_layout.h`
+
+### Pull and test on another machine
+
+```bash
+git pull
+./scripts/build-linux.sh
+./build/chess-boot-loader --no-boot
+```
+
+Play a short game, then press **R** to verify restart works.
 
 ---
 
@@ -125,6 +196,8 @@ cmake --build build
 chess-boot-loader/
 ├── CMakeLists.txt
 ├── README.md
+├── scripts/
+│   └── build-linux.sh      # configure + build helper for Linux
 ├── assets/
 │   ├── chess-board-banner-vector.jpg
 │   └── pieces/
