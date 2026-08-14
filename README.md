@@ -28,7 +28,17 @@ Same icon on both sides — the circle background color tells them apart.
 
 ### Boot splash
 
-On launch, a fullscreen black screen shows green BIOS-style text (`boot_splash.cpp`): POST checks, memory init, and loading messages for each language piece. Skip anytime with a key press or mouse click, or wait ~4 seconds to enter the game.
+On launch, a fullscreen black screen shows green BIOS-style text (`boot_splash.cpp`): POST checks, memory init, and loading messages for each language piece. Skip anytime with a key press or mouse click, or wait ~4 seconds.
+
+The boot text fades out, then the chess board fades in. The boot sequence runs once per app launch — restarting a game with **R** does not replay it.
+
+Skip the boot splash for faster iteration:
+
+```bash
+./build/chess-boot-loader --no-boot
+# or
+CHESS_BOOT_LOADER_NO_BOOT=1 ./build/chess-boot-loader
+```
 
 ### Board & pieces
 
@@ -166,7 +176,6 @@ chess-boot-loader/
 
 ## Future ideas
 
-- Boot-to-game fade transition
 - AI opponent (minimax)
 - Move history (algebraic notation)
 - Sound effects

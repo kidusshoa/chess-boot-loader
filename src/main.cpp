@@ -13,6 +13,16 @@ using namespace std;
 
 #include <string>
 
+struct GameDrawContext {
+    SDL_Texture* board_texture;
+    int texture_width;
+    int texture_height;
+    AssetLoader* assets;
+    ChessBoard* chess_board;
+    BoardRenderer* board_renderer;
+    GameController* game;
+};
+
 bool parse_debug_flag(int argc, char* argv[]) {
     for (int i = 1; i < argc; ++i) {
         if (string(argv[i]) == "--debug") {
@@ -20,6 +30,24 @@ bool parse_debug_flag(int argc, char* argv[]) {
         }
     }
     return false;
+}
+
+void draw_game_frame(SDL_Renderer* renderer, void* context) {
+    auto* ctx = static_cast<GameDrawContext*>(context);
+
+    int width = 0;
+    int height = 0;
+    SDL_GetRendererOutputSize(renderer, &width, &height);
+    ctx->board_renderer->update_layout(width, height, ctx->texture_width, ctx->texture_height);
+
+    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    SDL_RenderClear(renderer);
+
+    ctx->board_renderer->draw(renderer, ctx->board_texture);
+    ctx->chess_board->draw(renderer, *ctx->assets, *ctx->board_renderer);
+    ctx->game->draw_highlights(renderer, *ctx->chess_board, *ctx->board_renderer);
+    draw_game_ui(renderer, *ctx->game, width, height);
+    ctx->board_renderer->draw_debug_overlay(renderer);
 }
 
 void handle_mouse_click(
@@ -51,6 +79,7 @@ void handle_mouse_click(
 
 int main(int argc, char* argv[]) {
     const bool debug_overlay = parse_debug_flag(argc, argv);
+    const bool skip_boot = should_skip_boot(argc, argv);
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         cerr << "SDL_Init failed: " << SDL_GetError() << "\n";
@@ -80,11 +109,13 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    if (!run_boot_splash(renderer, window)) {
-        SDL_DestroyRenderer(renderer);
-        SDL_DestroyWindow(window);
-        SDL_Quit();
-        return 0;
+    if (!skip_boot) {
+        if (!run_boot_splash(renderer, window)) {
+            SDL_DestroyRenderer(renderer);
+            SDL_DestroyWindow(window);
+            SDL_Quit();
+            return 0;
+        }
     }
 
     AssetLoader assets(renderer);
@@ -107,6 +138,23 @@ int main(int argc, char* argv[]) {
     ChessBoard chess_board;
     GameController game;
 
+    GameDrawContext draw_context = {
+        board_texture,
+        texture_width,
+        texture_height,
+        &assets,
+        &chess_board,
+        &board_renderer,
+        &game,
+    };
+
+    if (!run_game_fade_in(renderer, window, draw_game_frame, &draw_context)) {
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 0;
+    }
+
     bool running = true;
     while (running) {
         SDL_Event event;
@@ -120,20 +168,7 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        int width = 0;
-        int height = 0;
-        SDL_GetRendererOutputSize(renderer, &width, &height);
-        board_renderer.update_layout(width, height, texture_width, texture_height);
-
-        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-        SDL_RenderClear(renderer);
-
-        board_renderer.draw(renderer, board_texture);
-        chess_board.draw(renderer, assets, board_renderer);
-        game.draw_highlights(renderer, chess_board, board_renderer);
-        draw_game_ui(renderer, game, width, height);
-        board_renderer.draw_debug_overlay(renderer);
-
+        draw_game_frame(renderer, &draw_context);
         SDL_RenderPresent(renderer);
     }
 
