@@ -2,8 +2,8 @@
 #include "board_renderer.h"
 #include "boot_splash.h"
 #include "chess_board.h"
+#include "game_controller.h"
 #include "piece_renderer.h"
-#include "square_selection.h"
 
 #include <iostream>
 using namespace std;
@@ -25,7 +25,8 @@ void handle_mouse_click(
     SDL_Renderer* renderer,
     SDL_Window* window,
     const SDL_MouseButtonEvent& button,
-    SquareSelection& selection,
+    GameController& game,
+    ChessBoard& chess_board,
     const BoardRenderer& board_renderer
 ) {
     int window_width = 0;
@@ -44,7 +45,7 @@ void handle_mouse_click(
     const int x = static_cast<int>(button.x * scale_x);
     const int y = static_cast<int>(button.y * scale_y);
 
-    selection.handle_click(board_renderer, x, y);
+    game.handle_click(chess_board, board_renderer, x, y);
 }
 
 int main(int argc, char* argv[]) {
@@ -103,7 +104,7 @@ int main(int argc, char* argv[]) {
     PieceRenderer::load_standard_pieces(assets);
 
     ChessBoard chess_board;
-    SquareSelection selection;
+    GameController game;
 
     bool running = true;
     while (running) {
@@ -112,7 +113,7 @@ int main(int argc, char* argv[]) {
             if (event.type == SDL_QUIT) {
                 running = false;
             } else if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
-                handle_mouse_click(renderer, window, event.button, selection, board_renderer);
+                handle_mouse_click(renderer, window, event.button, game, chess_board, board_renderer);
             }
         }
 
@@ -126,7 +127,7 @@ int main(int argc, char* argv[]) {
 
         board_renderer.draw(renderer, board_texture);
         chess_board.draw(renderer, assets, board_renderer);
-        selection.draw_highlight(renderer, board_renderer);
+        game.draw_highlights(renderer, board_renderer);
         board_renderer.draw_debug_overlay(renderer);
 
         SDL_RenderPresent(renderer);

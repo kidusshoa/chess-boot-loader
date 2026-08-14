@@ -42,6 +42,12 @@ Piece& ChessBoard::at(int file, int rank) {
     return squares_[rank][file];
 }
 
+void ChessBoard::move_piece(int from_file, int from_rank, int to_file, int to_rank) {
+    Piece moving_piece = squares_[from_rank][from_file];
+    squares_[from_rank][from_file] = {PieceType::None, Color::White};
+    squares_[to_rank][to_file] = moving_piece;
+}
+
 void ChessBoard::draw(
     SDL_Renderer* renderer,
     const AssetLoader& assets,

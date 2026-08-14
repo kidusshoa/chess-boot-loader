@@ -16,6 +16,8 @@ public:
     const Piece& at(int file, int rank) const;
     Piece& at(int file, int rank);
 
+    void move_piece(int from_file, int from_rank, int to_file, int to_rank);
+
     void draw(SDL_Renderer* renderer, const AssetLoader& assets, const BoardRenderer& board_renderer) const;
 
 private:
