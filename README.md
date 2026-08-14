@@ -68,6 +68,18 @@ Additional rules:
 - **Pawn promotion** — auto-promotes to Queen on the back rank
 - Pieces with no legal moves cannot be selected
 
+### Game UI
+
+`game_ui.cpp` draws a status bar at the top of the window:
+
+- **Turn indicator** — `White to move` / `Black to move`
+- **Check** — appends `Check!` when the current player's king is threatened
+- **Game over** — full-screen overlay for checkmate or stalemate, with `Press R to restart`
+- **King in check** — red highlight on the king's square
+- **Last move** — blue tint on the from/to squares of the previous move
+
+Press **R** anytime after game over to reset the board and play again.
+
 ### Debug mode
 
 Pass `--debug` to draw square borders and a–h / 1–8 labels over the board, useful for verifying grid alignment:
@@ -120,6 +132,7 @@ chess-boot-loader/
 │   ├── chess_board.h       # 8×8 board state
 │   ├── chess_types.h       # PieceType, Color, Piece
 │   ├── game_controller.h   # input, turns, game result
+│   ├── game_ui.h           # status bar and game-over overlay
 │   ├── move_validator.h    # move legality and check detection
 │   └── piece_renderer.h    # language icon rendering
 └── src/
@@ -130,6 +143,7 @@ chess-boot-loader/
     ├── chess_board.cpp
     ├── chess_types.cpp
     ├── game_controller.cpp
+    ├── game_ui.cpp
     ├── move_validator.cpp
     └── piece_renderer.cpp
 ```
@@ -146,12 +160,12 @@ chess-boot-loader/
 6. Turns alternate after each move.
 7. You cannot move into check. Checkmate and stalemate end the game.
 8. Pawns auto-promote to Queen on the back rank.
+9. Press **R** to restart after checkmate or stalemate.
 
 ---
 
 ## Future ideas
 
-- On-screen turn / check / game-over UI
 - Boot-to-game fade transition
 - AI opponent (minimax)
 - Move history (algebraic notation)

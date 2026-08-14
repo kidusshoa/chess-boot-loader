@@ -3,6 +3,7 @@
 #include "boot_splash.h"
 #include "chess_board.h"
 #include "game_controller.h"
+#include "game_ui.h"
 #include "piece_renderer.h"
 
 #include <iostream>
@@ -114,6 +115,8 @@ int main(int argc, char* argv[]) {
                 running = false;
             } else if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
                 handle_mouse_click(renderer, window, event.button, game, chess_board, board_renderer);
+            } else if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_r) {
+                game.restart(chess_board);
             }
         }
 
@@ -128,6 +131,7 @@ int main(int argc, char* argv[]) {
         board_renderer.draw(renderer, board_texture);
         chess_board.draw(renderer, assets, board_renderer);
         game.draw_highlights(renderer, chess_board, board_renderer);
+        draw_game_ui(renderer, game, width, height);
         board_renderer.draw_debug_overlay(renderer);
 
         SDL_RenderPresent(renderer);
