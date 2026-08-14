@@ -3,6 +3,7 @@
 #include "boot_splash.h"
 #include "chess_board.h"
 #include "piece_renderer.h"
+#include "square_selection.h"
 
 #include <iostream>
 using namespace std;
@@ -18,6 +19,32 @@ bool parse_debug_flag(int argc, char* argv[]) {
         }
     }
     return false;
+}
+
+void handle_mouse_click(
+    SDL_Renderer* renderer,
+    SDL_Window* window,
+    const SDL_MouseButtonEvent& button,
+    SquareSelection& selection,
+    const BoardRenderer& board_renderer
+) {
+    int window_width = 0;
+    int window_height = 0;
+    int output_width = 0;
+    int output_height = 0;
+    SDL_GetWindowSize(window, &window_width, &window_height);
+    SDL_GetRendererOutputSize(renderer, &output_width, &output_height);
+
+    if (window_width <= 0 || window_height <= 0) {
+        return;
+    }
+
+    const float scale_x = output_width / static_cast<float>(window_width);
+    const float scale_y = output_height / static_cast<float>(window_height);
+    const int x = static_cast<int>(button.x * scale_x);
+    const int y = static_cast<int>(button.y * scale_y);
+
+    selection.handle_click(board_renderer, x, y);
 }
 
 int main(int argc, char* argv[]) {
@@ -76,6 +103,7 @@ int main(int argc, char* argv[]) {
     PieceRenderer::load_standard_pieces(assets);
 
     ChessBoard chess_board;
+    SquareSelection selection;
 
     bool running = true;
     while (running) {
@@ -83,6 +111,8 @@ int main(int argc, char* argv[]) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT) {
                 running = false;
+            } else if (event.type == SDL_MOUSEBUTTONDOWN && event.button.button == SDL_BUTTON_LEFT) {
+                handle_mouse_click(renderer, window, event.button, selection, board_renderer);
             }
         }
 
@@ -96,6 +126,7 @@ int main(int argc, char* argv[]) {
 
         board_renderer.draw(renderer, board_texture);
         chess_board.draw(renderer, assets, board_renderer);
+        selection.draw_highlight(renderer, board_renderer);
         board_renderer.draw_debug_overlay(renderer);
 
         SDL_RenderPresent(renderer);
