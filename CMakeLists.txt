@@ -19,6 +19,7 @@ add_executable(chess-boot-loader
     src/chess_board.cpp
     src/piece_renderer.cpp
     src/game_controller.cpp
+    src/move_validator.cpp
 )
 
 target_include_directories(chess-boot-loader PRIVATE include)

@@ -2,6 +2,10 @@
 
 #include "board_renderer.h"
 #include "chess_board.h"
+#include "move_validator.h"
+
+#include <utility>
+#include <vector>
 
 GameController::GameController()
     : current_player_(Color::White),
@@ -56,6 +60,10 @@ bool GameController::attempt_move(ChessBoard& board, int to_file, int to_rank) {
         return select_piece(board, to_file, to_rank);
     }
 
+    if (!is_legal_move(board, from_file_, from_rank_, to_file, to_rank)) {
+        return false;
+    }
+
     board.move_piece(from_file_, from_rank_, to_file, to_rank);
     clear_selection();
     current_player_ = current_player_ == Color::White ? Color::Black : Color::White;
@@ -76,28 +84,33 @@ bool GameController::handle_click(ChessBoard& board, const BoardRenderer& board_
     return attempt_move(board, file, rank);
 }
 
-void GameController::draw_highlights(SDL_Renderer* renderer, const BoardRenderer& board_renderer) const {
+void GameController::draw_highlights(
+    SDL_Renderer* renderer,
+    const ChessBoard& board,
+    const BoardRenderer& board_renderer
+) const {
     if (!has_selection_) {
         return;
     }
 
+    const std::vector<std::pair<int, int>> legal_moves = legal_moves_from(board, from_file_, from_rank_);
+
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
 
-    for (int rank = 0; rank < 8; ++rank) {
-        for (int file = 0; file < 8; ++file) {
-            const SDL_Rect square = board_renderer.square_bounds(file, rank);
-            if (square.w <= 0 || square.h <= 0) {
-                continue;
-            }
+    const SDL_Rect selected_square = board_renderer.square_bounds(from_file_, from_rank_);
+    if (selected_square.w > 0 && selected_square.h > 0) {
+        SDL_SetRenderDrawColor(renderer, 255, 255, 0, 110);
+        SDL_RenderFillRect(renderer, &selected_square);
+    }
 
-            if (file == from_file_ && rank == from_rank_) {
-                SDL_SetRenderDrawColor(renderer, 255, 255, 0, 110);
-            } else {
-                SDL_SetRenderDrawColor(renderer, 80, 200, 120, 70);
-            }
-
-            SDL_RenderFillRect(renderer, &square);
+    for (const auto& move : legal_moves) {
+        const SDL_Rect square = board_renderer.square_bounds(move.first, move.second);
+        if (square.w <= 0 || square.h <= 0) {
+            continue;
         }
+
+        SDL_SetRenderDrawColor(renderer, 80, 200, 120, 90);
+        SDL_RenderFillRect(renderer, &square);
     }
 
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);

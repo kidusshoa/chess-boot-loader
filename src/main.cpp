@@ -127,7 +127,7 @@ int main(int argc, char* argv[]) {
 
         board_renderer.draw(renderer, board_texture);
         chess_board.draw(renderer, assets, board_renderer);
-        game.draw_highlights(renderer, board_renderer);
+        game.draw_highlights(renderer, chess_board, board_renderer);
         board_renderer.draw_debug_overlay(renderer);
 
         SDL_RenderPresent(renderer);

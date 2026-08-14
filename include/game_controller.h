@@ -17,7 +17,11 @@ public:
     int selected_rank() const;
 
     bool handle_click(ChessBoard& board, const BoardRenderer& board_renderer, int x, int y);
-    void draw_highlights(SDL_Renderer* renderer, const BoardRenderer& board_renderer) const;
+    void draw_highlights(
+        SDL_Renderer* renderer,
+        const ChessBoard& board,
+        const BoardRenderer& board_renderer
+    ) const;
 
 private:
     Color current_player_;

@@ -24,7 +24,7 @@ Same icon on both sides — the circle background color tells them apart.
 
 ---
 
-## Progress (Parts 1–9)
+## Progress (Parts 1–10)
 
 ### Part 1 — Project skeleton ✅
 - CMake project with C++17
@@ -69,11 +69,20 @@ Same icon on both sides — the circle background color tells them apart.
 ### Part 9 — Move selection flow ✅
 - `game_controller.cpp` — two-click move flow
 - First click selects your piece (current player only)
-- Second click moves to destination (or re-select another friendly piece)
+- Second click moves to destination (or re-selects a friendly piece)
 - Click same square again to deselect
 - Turns alternate White → Black
-- Yellow highlight on selected piece, green tint on destination squares
-- **Note:** moves are not validated yet (Part 10)
+- Yellow highlight on selected piece, green on destination squares
+
+### Part 10 — Basic move validation ✅
+- `move_validator.cpp` — per-piece movement rules
+- Pawn: single/double push from start, diagonal capture only
+- Knight: L-shaped jumps
+- Bishop/Rook/Queen: sliding with path blocking
+- King: one square any direction
+- Blocks moves onto friendly pieces; captures remove enemy pieces
+- Illegal moves rejected with no board change
+- Green highlights show only legal destination squares
 
 ### Alignment fix ✅
 - Board grid insets measured from `chess-board-banner-vector.jpg` (1920×1920)
@@ -129,6 +138,7 @@ chess-boot-loader/
 │   ├── chess_board.h
 │   ├── chess_types.h
 │   ├── game_controller.h
+│   ├── move_validator.h
 │   └── piece_renderer.h
 └── src/
     ├── main.cpp
@@ -138,16 +148,16 @@ chess-boot-loader/
     ├── chess_board.cpp
     ├── chess_types.cpp
     ├── game_controller.cpp
+    ├── move_validator.cpp
     └── piece_renderer.cpp
 ```
 
 ---
 
-## Remaining parts (10–15)
+## Remaining parts (11–15)
 
 | Part | Description                                      | Status  |
 |------|--------------------------------------------------|---------|
-| 10   | Basic move validation (per-piece rules)            | Pending |
 | 11   | Advanced rules (check, checkmate, promotion)     | Pending |
 | 12   | Game UI (turn indicator, checkmate screen)       | Pending |
 | 13   | Boot-to-game transition polish                   | Pending |
@@ -165,8 +175,9 @@ chess-boot-loader/
 5. Click the same piece again to deselect.
 6. Click another friendly piece while selected to switch selection.
 7. Turns alternate after each move.
+8. Green squares show legal moves for the selected piece.
 
-Moves currently ignore chess rules — any piece can move anywhere. Part 10 adds proper validation.
+Basic chess rules apply (piece movement, captures, blocked paths). Check/checkmate validation comes in Part 11.
 
 ---
 
