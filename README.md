@@ -11,7 +11,7 @@ A boot-themed two-player chess game. A BIOS-style splash screen plays on launch,
 | Bishop | Python     | `python.svg`       | Black or white circle |
 | Knight | JavaScript | `javascript.svg`   | Black or white circle |
 | Rook   | Rust       | `rust.svg`         | Black or white circle |
-| Pawn   | Go         | `go.svg`             | Black or white circle |
+| Pawn   | Go         | `go.svg`           | Black or white circle |
 
 Same icon on both sides — the circle background color tells them apart.
 
@@ -20,73 +20,61 @@ Same icon on both sides — the circle background color tells them apart.
 - **Language:** C++17
 - **Rendering:** SDL2, SDL2_image, SDL2_ttf
 - **Build:** CMake + pkg-config
-- **Primary target:** Linux
+- **Target:** Linux
 
 ---
 
-## Progress (Parts 1–10)
+## How it works
 
-### Part 1 — Project skeleton ✅
-- CMake project with C++17
-- Folder layout: `src/`, `include/`, `assets/`, `assets/pieces/`
-- Minimal `main.cpp` entry point
+### Boot splash
 
-### Part 2 — SDL2 integration ✅
-- SDL2 window (800×800, resizable)
-- Game loop with event polling and clean shutdown
-- Linked SDL2_image and SDL2_ttf
+On launch, a fullscreen black screen shows green BIOS-style text (`boot_splash.cpp`): POST checks, memory init, and loading messages for each language piece. Skip anytime with a key press or mouse click, or wait ~4 seconds to enter the game.
 
-### Part 3 — Boot splash screen ✅
-- `boot_splash.cpp` — BIOS-style green typewriter text
-- POST lines and language init messages
-- Skip with key/mouse or auto-continue after 4 seconds
+### Board & pieces
 
-### Part 4 — Asset loading ✅
-- `asset_loader.cpp` — loads board JPG and piece icons
-- Clear error messages for missing files
-- Textures freed on shutdown
+The board image is loaded from `assets/chess-board-banner-vector.jpg` and scaled to fit the window while keeping its aspect ratio. An 8×8 grid is mapped onto the image using measured pixel bounds (origin 48px, playable area 1824×1824 on the 1920×1920 source — see `board_layout.h`).
 
-### Part 5 — Board rendering ✅
-- `board_renderer.cpp` — 8×8 grid mapped to screen coordinates
-- Board image scaled with aspect ratio preserved
-- `--debug` flag shows square borders and a–h / 1–8 labels
+Each piece is drawn as a language SVG icon on a colored circle background (`piece_renderer.cpp`). White pieces use a light circle; black pieces use a dark circle. If an SVG fails to load, a text label fallback is shown instead.
 
-### Part 6 — Piece icon setup ✅
-- `chess_types.h` — `PieceType`, `Color`, `Piece`
-- `piece_renderer.cpp` — circle background + language icon
-- SVG icons with text fallback if assets are missing
+### Game flow
 
-### Part 7 — Board state & starting position ✅
-- `chess_board.cpp` — 8×8 board array
-- `reset_to_starting_position()` with standard chess setup
-- Renders all 32 pieces from board state
+`game_controller.cpp` handles input and turn logic:
 
-### Part 8 — Square selection input ✅
-- Click a square to highlight it
-- HiDPI mouse coordinate scaling
-- Clicks outside the board are ignored
+1. White moves first.
+2. First click selects one of your pieces (yellow highlight).
+3. Green squares show legal destinations for that piece.
+4. Second click moves to the destination, or click another friendly piece to switch selection.
+5. Click the same piece again to deselect.
+6. Turns alternate after each valid move.
 
-### Part 9 — Move selection flow ✅
-- `game_controller.cpp` — two-click move flow
-- First click selects your piece (current player only)
-- Second click moves to destination (or re-selects a friendly piece)
-- Click same square again to deselect
-- Turns alternate White → Black
-- Yellow highlight on selected piece, green on destination squares
+Clicks outside the board are ignored. Mouse coordinates are scaled for resizable / HiDPI windows.
 
-### Part 10 — Basic move validation ✅
-- `move_validator.cpp` — per-piece movement rules
-- Pawn: single/double push from start, diagonal capture only
-- Knight: L-shaped jumps
-- Bishop/Rook/Queen: sliding with path blocking
-- King: one square any direction
-- Blocks moves onto friendly pieces; captures remove enemy pieces
-- Illegal moves rejected with no board change
-- Green highlights show only legal destination squares
+### Chess rules
 
-### Alignment fix ✅
-- Board grid insets measured from `chess-board-banner-vector.jpg` (1920×1920)
-- Playable area: origin 48px, size 1824px on each side (`board_layout.h`)
+`move_validator.cpp` enforces standard piece movement:
+
+- **Pawn** — one or two squares forward from start, diagonal capture only
+- **Knight** — L-shaped jumps
+- **Bishop / Rook / Queen** — sliding, blocked by pieces in the path
+- **King** — one square in any direction
+
+Additional rules:
+
+- Cannot move onto a friendly piece
+- Captures remove the enemy piece
+- Cannot move if it leaves your king in check
+- **Checkmate** ends the game (winner stored in `GameController`)
+- **Stalemate** ends the game as a draw
+- **Pawn promotion** — auto-promotes to Queen on the back rank
+- Pieces with no legal moves cannot be selected
+
+### Debug mode
+
+Pass `--debug` to draw square borders and a–h / 1–8 labels over the board, useful for verifying grid alignment:
+
+```bash
+./build/chess-boot-loader --debug
+```
 
 ---
 
@@ -107,12 +95,6 @@ cmake --build build
 ./build/chess-boot-loader
 ```
 
-Debug mode (square grid overlay):
-
-```bash
-./build/chess-boot-loader --debug
-```
-
 ---
 
 ## Project structure
@@ -131,15 +113,15 @@ chess-boot-loader/
 │       ├── rust.svg
 │       └── go.svg
 ├── include/
-│   ├── asset_loader.h
-│   ├── board_layout.h
-│   ├── board_renderer.h
-│   ├── boot_splash.h
-│   ├── chess_board.h
-│   ├── chess_types.h
-│   ├── game_controller.h
-│   ├── move_validator.h
-│   └── piece_renderer.h
+│   ├── asset_loader.h      # texture loading (board + SVG pieces)
+│   ├── board_layout.h      # measured grid bounds for the board image
+│   ├── board_renderer.h    # board drawing and square mapping
+│   ├── boot_splash.h       # BIOS-style startup screen
+│   ├── chess_board.h       # 8×8 board state
+│   ├── chess_types.h       # PieceType, Color, Piece
+│   ├── game_controller.h   # input, turns, game result
+│   ├── move_validator.h    # move legality and check detection
+│   └── piece_renderer.h    # language icon rendering
 └── src/
     ├── main.cpp
     ├── asset_loader.cpp
@@ -154,36 +136,25 @@ chess-boot-loader/
 
 ---
 
-## Remaining parts (11–15)
+## How to play
 
-| Part | Description                                      | Status  |
-|------|--------------------------------------------------|---------|
-| 11   | Advanced rules (check, checkmate, promotion)     | Pending |
-| 12   | Game UI (turn indicator, checkmate screen)       | Pending |
-| 13   | Boot-to-game transition polish                   | Pending |
-| 14   | Linux build verification                         | Pending |
-| 15   | Final polish & release                           | Pending |
-
----
-
-## How to play (current build)
-
-1. Boot splash plays (click or wait to skip).
+1. Boot splash plays — click or wait to skip.
 2. White moves first.
 3. Click one of your pieces to select it.
-4. Click a destination square to move.
-5. Click the same piece again to deselect.
-6. Click another friendly piece while selected to switch selection.
-7. Turns alternate after each move.
-8. Green squares show legal moves for the selected piece.
-
-Basic chess rules apply (piece movement, captures, blocked paths). Check/checkmate validation comes in Part 11.
+4. Click a green highlighted square to move.
+5. Click the same piece again to deselect, or click another friendly piece to switch selection.
+6. Turns alternate after each move.
+7. You cannot move into check. Checkmate and stalemate end the game.
+8. Pawns auto-promote to Queen on the back rank.
 
 ---
 
 ## Future ideas
 
+- On-screen turn / check / game-over UI
+- Boot-to-game fade transition
 - AI opponent (minimax)
 - Move history (algebraic notation)
 - Sound effects
+- Castling and en passant
 - Bare-metal bootloader version (separate project)

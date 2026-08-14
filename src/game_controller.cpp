@@ -9,12 +9,22 @@
 
 GameController::GameController()
     : current_player_(Color::White),
+      game_result_(GameResult::InProgress),
+      in_check_(false),
       has_selection_(false),
       from_file_(0),
       from_rank_(0) {}
 
 Color GameController::current_player() const {
     return current_player_;
+}
+
+GameResult GameController::game_result() const {
+    return game_result_;
+}
+
+bool GameController::is_in_check() const {
+    return in_check_;
 }
 
 bool GameController::has_piece_selected() const {
@@ -33,9 +43,29 @@ void GameController::clear_selection() {
     has_selection_ = false;
 }
 
+void GameController::update_game_state(const ChessBoard& board) {
+    if (is_checkmate(board, current_player_)) {
+        game_result_ = current_player_ == Color::White ? GameResult::BlackWins : GameResult::WhiteWins;
+        in_check_ = true;
+        return;
+    }
+
+    if (is_stalemate(board, current_player_)) {
+        game_result_ = GameResult::Draw;
+        in_check_ = false;
+        return;
+    }
+
+    in_check_ = is_in_check(board, current_player_);
+}
+
 bool GameController::select_piece(const ChessBoard& board, int file, int rank) {
     const Piece& piece = board.at(file, rank);
     if (piece.is_empty() || piece.color != current_player_) {
+        return false;
+    }
+
+    if (legal_moves_from(board, file, rank).empty()) {
         return false;
     }
 
@@ -67,10 +97,15 @@ bool GameController::attempt_move(ChessBoard& board, int to_file, int to_rank) {
     board.move_piece(from_file_, from_rank_, to_file, to_rank);
     clear_selection();
     current_player_ = current_player_ == Color::White ? Color::Black : Color::White;
+    update_game_state(board);
     return true;
 }
 
 bool GameController::handle_click(ChessBoard& board, const BoardRenderer& board_renderer, int x, int y) {
+    if (game_result_ != GameResult::InProgress) {
+        return false;
+    }
+
     int file = 0;
     int rank = 0;
     if (!board_renderer.pixel_to_square(x, y, file, rank)) {

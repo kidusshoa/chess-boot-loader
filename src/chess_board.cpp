@@ -46,6 +46,13 @@ void ChessBoard::move_piece(int from_file, int from_rank, int to_file, int to_ra
     Piece moving_piece = squares_[from_rank][from_file];
     squares_[from_rank][from_file] = {PieceType::None, Color::White};
     squares_[to_rank][to_file] = moving_piece;
+
+    if (moving_piece.type == PieceType::Pawn) {
+        if ((moving_piece.color == Color::White && to_rank == 7) ||
+            (moving_piece.color == Color::Black && to_rank == 0)) {
+            squares_[to_rank][to_file].type = PieceType::Queen;
+        }
+    }
 }
 
 void ChessBoard::draw(

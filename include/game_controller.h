@@ -7,11 +7,20 @@ class ChessBoard;
 
 #include <SDL2/SDL.h>
 
+enum class GameResult {
+    InProgress,
+    WhiteWins,
+    BlackWins,
+    Draw,
+};
+
 class GameController {
 public:
     GameController();
 
     Color current_player() const;
+    GameResult game_result() const;
+    bool is_in_check() const;
     bool has_piece_selected() const;
     int selected_file() const;
     int selected_rank() const;
@@ -25,11 +34,14 @@ public:
 
 private:
     Color current_player_;
+    GameResult game_result_;
+    bool in_check_;
     bool has_selection_;
     int from_file_;
     int from_rank_;
 
     void clear_selection();
+    void update_game_state(const ChessBoard& board);
     bool select_piece(const ChessBoard& board, int file, int rank);
     bool attempt_move(ChessBoard& board, int to_file, int to_rank);
 };
