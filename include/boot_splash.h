@@ -14,5 +14,3 @@ bool run_game_fade_in(
     BootTransitionDrawFn draw_frame,
     void* context
 );
-
-bool should_skip_boot(int argc, char* argv[]);

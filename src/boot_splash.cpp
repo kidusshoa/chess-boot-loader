@@ -1,4 +1,5 @@
 #include "boot_splash.h"
+#include "version.h"
 
 #include <iostream>
 using namespace std;
@@ -21,21 +22,23 @@ constexpr int MARGIN_X = 32;
 constexpr int MARGIN_Y = 36;
 constexpr int FONT_SIZE = 20;
 
-const vector<const char*> BOOT_LINES = {
-    "chess-boot-loader v0.1.0",
-    "",
-    "POST: Memory check ............... OK",
-    "POST: CPU detected ............... OK",
-    "Loading chess engine...",
-    "Initializing C king...",
-    "Initializing Java queen...",
-    "Initializing Python bishop...",
-    "Initializing JavaScript knight...",
-    "Initializing Rust rook...",
-    "Initializing Go pawn...",
-    "",
-    "Boot complete. Starting game...",
-};
+vector<string> boot_lines() {
+    return {
+        string("chess-boot-loader v") + CHESS_BOOT_LOADER_VERSION,
+        "",
+        "POST: Memory check ............... OK",
+        "POST: CPU detected ............... OK",
+        "Loading chess engine...",
+        "Initializing C king...",
+        "Initializing Java queen...",
+        "Initializing Python bishop...",
+        "Initializing JavaScript knight...",
+        "Initializing Rust rook...",
+        "Initializing Go pawn...",
+        "",
+        "Boot complete. Starting game...",
+    };
+}
 
 TTF_Font* load_font() {
     const char* font_paths[] = {
@@ -84,6 +87,7 @@ void render_line(SDL_Renderer* renderer, TTF_Font* font, const char* text, int x
 void render_boot_frame(
     SDL_Renderer* renderer,
     TTF_Font* font,
+    const vector<string>& lines,
     size_t line_index,
     size_t char_index,
     Uint8 text_alpha
@@ -93,15 +97,15 @@ void render_boot_frame(
 
     int y = MARGIN_Y;
     for (size_t i = 0; i < line_index; ++i) {
-        render_line(renderer, font, BOOT_LINES[i], MARGIN_X, y, text_alpha);
+        render_line(renderer, font, lines[i].c_str(), MARGIN_X, y, text_alpha);
         y += LINE_HEIGHT;
     }
 
-    if (line_index < BOOT_LINES.size()) {
+    if (line_index < lines.size()) {
         string partial;
-        const char* current_line = BOOT_LINES[line_index];
-        if (current_line && char_index > 0) {
-            partial.assign(current_line, char_index);
+        const string& current_line = lines[line_index];
+        if (char_index > 0) {
+            partial.assign(current_line, 0, char_index);
         }
         render_line(renderer, font, partial.c_str(), MARGIN_X, y, text_alpha);
     }
@@ -129,7 +133,14 @@ void draw_fade_overlay(SDL_Renderer* renderer, int window_width, int window_heig
     SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_NONE);
 }
 
-bool fade_out_boot_screen(SDL_Renderer* renderer, SDL_Window* window, TTF_Font* font, size_t line_index, size_t char_index) {
+bool fade_out_boot_screen(
+    SDL_Renderer* renderer,
+    SDL_Window* window,
+    TTF_Font* font,
+    const vector<string>& lines,
+    size_t line_index,
+    size_t char_index
+) {
     const Uint32 fade_start = SDL_GetTicks();
 
     while (true) {
@@ -145,7 +156,7 @@ bool fade_out_boot_screen(SDL_Renderer* renderer, SDL_Window* window, TTF_Font* 
         const float progress = elapsed / static_cast<float>(BOOT_FADE_OUT_MS);
         const Uint8 text_alpha = static_cast<Uint8>(255.0f * (1.0f - progress));
 
-        render_boot_frame(renderer, font, line_index, char_index, text_alpha);
+        render_boot_frame(renderer, font, lines, line_index, char_index, text_alpha);
 
         int width = 0;
         int height = 0;
@@ -162,21 +173,6 @@ bool fade_out_boot_screen(SDL_Renderer* renderer, SDL_Window* window, TTF_Font* 
 
 }  // namespace
 
-bool should_skip_boot(int argc, char* argv[]) {
-    for (int i = 1; i < argc; ++i) {
-        if (string(argv[i]) == "--no-boot") {
-            return true;
-        }
-    }
-
-    const char* env_value = getenv("CHESS_BOOT_LOADER_NO_BOOT");
-    if (!env_value || env_value[0] == '\0') {
-        return false;
-    }
-
-    return string(env_value) != "0";
-}
-
 bool run_boot_splash(SDL_Renderer* renderer, SDL_Window* window) {
     if (TTF_Init() != 0) {
         cerr << "TTF_Init failed: " << TTF_GetError() << "\n";
@@ -190,6 +186,7 @@ bool run_boot_splash(SDL_Renderer* renderer, SDL_Window* window) {
         return false;
     }
 
+    const vector<string> lines = boot_lines();
     const Uint32 start_ticks = SDL_GetTicks();
     Uint32 last_char_ticks = start_ticks;
 
@@ -219,8 +216,8 @@ bool run_boot_splash(SDL_Renderer* renderer, SDL_Window* window) {
         if (!sequence_complete && now - last_char_ticks >= static_cast<Uint32>(TYPEWRITER_DELAY_MS)) {
             last_char_ticks = now;
 
-            if (line_index < BOOT_LINES.size()) {
-                const size_t line_length = BOOT_LINES[line_index] ? strlen(BOOT_LINES[line_index]) : 0;
+            if (line_index < lines.size()) {
+                const size_t line_length = lines[line_index].size();
                 if (char_index < line_length) {
                     ++char_index;
                 } else {
@@ -232,7 +229,7 @@ bool run_boot_splash(SDL_Renderer* renderer, SDL_Window* window) {
             }
         }
 
-        render_boot_frame(renderer, font, line_index, char_index, 255);
+        render_boot_frame(renderer, font, lines, line_index, char_index, 255);
 
         SDL_RenderPresent(renderer);
         SDL_Delay(16);
@@ -242,7 +239,7 @@ bool run_boot_splash(SDL_Renderer* renderer, SDL_Window* window) {
         }
     }
 
-    const bool fade_ok = fade_out_boot_screen(renderer, window, font, line_index, char_index);
+    const bool fade_ok = fade_out_boot_screen(renderer, window, font, lines, line_index, char_index);
 
     TTF_CloseFont(font);
     TTF_Quit();

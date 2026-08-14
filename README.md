@@ -2,6 +2,8 @@
 
 A boot-themed two-player chess game. A BIOS-style splash screen plays on launch, then you play chess on a board where each piece is a programming language icon.
 
+**Version:** 0.1.0 · **License:** GPL-3.0 (see [LICENSE](LICENSE))
+
 ## Concept
 
 | Piece  | Language   | Asset file         | Side indicator        |
@@ -148,10 +150,12 @@ On startup the game prints which asset directory it found, e.g. `Using assets fr
 
 ### Flags
 
-| Flag        | Description                          |
-|-------------|--------------------------------------|
-| `--debug`   | Show square grid overlay             |
-| `--no-boot` | Skip the BIOS boot splash            |
+| Flag           | Description                          |
+|----------------|--------------------------------------|
+| `--debug`      | Show square grid overlay             |
+| `--no-boot`    | Skip the BIOS boot splash            |
+| `--help`, `-h` | Show usage and exit                  |
+| `--version`, `-v` | Show version and exit             |
 
 Environment variables:
 
@@ -190,6 +194,30 @@ Play a short game, then press **R** to verify restart works.
 
 ---
 
+## Known limitations (v0.1.0)
+
+- Two-player local only — no AI or network play
+- Pawn promotion always becomes Queen (no underpromotion)
+- No castling or en passant
+- No move history or undo
+- Board grid alignment is tuned for the bundled board JPG — other board images may need adjusted bounds in `board_layout.h`
+- SVG piece icons require SDL2_image built with librsvg support
+
+---
+
+## Release
+
+This is **v0.1.0** — a playable local two-player chess game with boot splash, language-themed pieces, and standard rules (minus castling/en passant).
+
+To tag a release after verifying on your Linux machine:
+
+```bash
+git tag -a v0.1.0 -m "chess-boot-loader v0.1.0"
+git push origin v0.1.0
+```
+
+---
+
 ## Project structure
 
 ```
@@ -217,7 +245,8 @@ chess-boot-loader/
 │   ├── game_controller.h   # input, turns, game result
 │   ├── game_ui.h           # status bar and game-over overlay
 │   ├── move_validator.h    # move legality and check detection
-│   └── piece_renderer.h    # language icon rendering
+│   ├── piece_renderer.h    # language icon rendering
+│   └── version.h           # release version string
 └── src/
     ├── main.cpp
     ├── asset_loader.cpp

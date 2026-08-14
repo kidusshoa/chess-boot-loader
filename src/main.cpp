@@ -5,12 +5,14 @@
 #include "game_controller.h"
 #include "game_ui.h"
 #include "piece_renderer.h"
+#include "version.h"
 
 #include <iostream>
 using namespace std;
 
 #include <SDL2/SDL.h>
 
+#include <cstdlib>
 #include <string>
 
 struct GameDrawContext {
@@ -23,13 +25,57 @@ struct GameDrawContext {
     GameController* game;
 };
 
-bool parse_debug_flag(int argc, char* argv[]) {
+struct AppOptions {
+    bool debug_overlay = false;
+    bool skip_boot = false;
+    bool show_help = false;
+    bool show_version = false;
+};
+
+AppOptions parse_options(int argc, char* argv[]) {
+    AppOptions options;
+
     for (int i = 1; i < argc; ++i) {
-        if (string(argv[i]) == "--debug") {
-            return true;
+        const string arg = argv[i];
+        if (arg == "--debug") {
+            options.debug_overlay = true;
+        } else if (arg == "--no-boot") {
+            options.skip_boot = true;
+        } else if (arg == "--help" || arg == "-h") {
+            options.show_help = true;
+        } else if (arg == "--version" || arg == "-v") {
+            options.show_version = true;
+        } else {
+            cerr << "Unknown option: " << arg << "\n";
+            options.show_help = true;
         }
     }
-    return false;
+
+    if (!options.skip_boot) {
+        const char* env_value = getenv("CHESS_BOOT_LOADER_NO_BOOT");
+        if (env_value && env_value[0] != '\0' && string(env_value) != "0") {
+            options.skip_boot = true;
+        }
+    }
+
+    return options;
+}
+
+void print_help() {
+    cout << "chess-boot-loader v" << CHESS_BOOT_LOADER_VERSION << "\n\n";
+    cout << "A boot-themed two-player chess game with programming language piece icons.\n\n";
+    cout << "Usage: chess-boot-loader [options]\n\n";
+    cout << "Options:\n";
+    cout << "  --debug      Show square grid overlay for alignment checks\n";
+    cout << "  --no-boot    Skip the BIOS boot splash\n";
+    cout << "  --help, -h   Show this help message\n";
+    cout << "  --version, -v  Show version and exit\n\n";
+    cout << "Environment:\n";
+    cout << "  CHESS_BOOT_LOADER_NO_BOOT   Skip boot splash when set (not 0)\n";
+    cout << "  CHESS_BOOT_LOADER_ASSETS      Custom path to assets folder\n\n";
+    cout << "In-game controls:\n";
+    cout << "  Left click   Select piece / move\n";
+    cout << "  R            Restart after checkmate or stalemate\n";
 }
 
 void draw_game_frame(SDL_Renderer* renderer, void* context) {
@@ -78,16 +124,26 @@ void handle_mouse_click(
 }
 
 int main(int argc, char* argv[]) {
-    const bool debug_overlay = parse_debug_flag(argc, argv);
-    const bool skip_boot = should_skip_boot(argc, argv);
+    const AppOptions options = parse_options(argc, argv);
+
+    if (options.show_help) {
+        print_help();
+        return 0;
+    }
+
+    if (options.show_version) {
+        cout << "chess-boot-loader v" << CHESS_BOOT_LOADER_VERSION << "\n";
+        return 0;
+    }
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         cerr << "SDL_Init failed: " << SDL_GetError() << "\n";
         return 1;
     }
 
+    const string window_title = string("chess-boot-loader v") + CHESS_BOOT_LOADER_VERSION;
     SDL_Window* window = SDL_CreateWindow(
-        "chess-boot-loader",
+        window_title.c_str(),
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
         800,
@@ -101,7 +157,11 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    SDL_Renderer* renderer = SDL_CreateRenderer(
+        window,
+        -1,
+        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
+    );
     if (!renderer) {
         cerr << "SDL_CreateRenderer failed: " << SDL_GetError() << "\n";
         SDL_DestroyWindow(window);
@@ -109,7 +169,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    if (!skip_boot) {
+    if (!options.skip_boot) {
         if (!run_boot_splash(renderer, window)) {
             SDL_DestroyRenderer(renderer);
             SDL_DestroyWindow(window);
@@ -131,7 +191,7 @@ int main(int argc, char* argv[]) {
     int texture_height = 0;
     SDL_QueryTexture(board_texture, nullptr, nullptr, &texture_width, &texture_height);
 
-    BoardRenderer board_renderer(debug_overlay);
+    BoardRenderer board_renderer(options.debug_overlay);
 
     PieceRenderer::load_standard_pieces(assets);
 
@@ -175,7 +235,5 @@ int main(int argc, char* argv[]) {
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
-
-    cout << "chess-boot-loader\n";
     return 0;
 }

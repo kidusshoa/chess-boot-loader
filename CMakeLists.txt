@@ -23,6 +23,10 @@ add_executable(chess-boot-loader
     src/move_validator.cpp
 )
 
+target_compile_definitions(chess-boot-loader PRIVATE
+    CHESS_BOOT_LOADER_VERSION="${PROJECT_VERSION}"
+)
+
 target_include_directories(chess-boot-loader PRIVATE include)
 target_link_libraries(chess-boot-loader PRIVATE
     PkgConfig::SDL2
