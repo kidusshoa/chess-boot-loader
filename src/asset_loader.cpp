@@ -1,4 +1,5 @@
 #include "asset_loader.h"
+#include "svg_loader.h"
 
 #include <iostream>
 using namespace std;
@@ -188,10 +189,21 @@ SDL_Surface* AssetLoader::load_surface_from_file(const string& path) {
     SDL_Surface* surface = nullptr;
 
     if (ends_with(path, ".svg")) {
-#if SDL_IMAGE_VERSION_ATLEAST(2, 6, 0)
-        surface = IMG_LoadSizedSVG(path.c_str(), SVG_RASTER_SIZE, SVG_RASTER_SIZE);
+        const string png_path = path.substr(0, path.size() - 4) + ".png";
+        if (path_exists(png_path)) {
+            surface = IMG_Load(png_path.c_str());
+        }
+
         if (!surface) {
-            cerr << "IMG_LoadSizedSVG failed for " << path << ": " << IMG_GetError() << "\n";
+            surface = load_svg_surface(path.c_str(), SVG_RASTER_SIZE, SVG_RASTER_SIZE);
+        }
+
+#if SDL_IMAGE_VERSION_ATLEAST(2, 6, 0)
+        if (!surface) {
+            surface = IMG_LoadSizedSVG(path.c_str(), SVG_RASTER_SIZE, SVG_RASTER_SIZE);
+            if (!surface) {
+                cerr << "IMG_LoadSizedSVG failed for " << path << ": " << IMG_GetError() << "\n";
+            }
         }
 #endif
         if (!surface) {

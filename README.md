@@ -110,7 +110,7 @@ Install dependencies:
 
 ```bash
 sudo apt install build-essential cmake pkg-config \
-  libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev librsvg2-dev
+  libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev librsvg2-dev libcairo2-dev
 ```
 
 Clone, build, and run:
@@ -172,8 +172,10 @@ Environment variables:
 - Check startup output for `Using assets from: ...`
 
 **SVG icons show text fallback instead**
-- Install SVG support: `sudo apt install librsvg2-dev`
-- Reinstall SDL2_image: `sudo apt install --reinstall libsdl2-image-dev`
+- Install SVG dependencies: `sudo apt install librsvg2-dev libcairo2-dev`
+- Rebuild: `./scripts/build-linux.sh`
+- At build time, `rsvg-convert` (from `librsvg2-bin`) pre-rasterizes icons to PNG; install with: `sudo apt install librsvg2-bin`
+- Check terminal for `Failed to load piece asset` or `rsvg load failed` messages
 
 **No text in UI or boot splash**
 - Install fonts: `sudo apt install fonts-dejavu fonts-liberation`
@@ -201,7 +203,7 @@ Play a short game, then press **R** to verify restart works.
 - No castling or en passant
 - No move history or undo
 - Board grid alignment is tuned for the bundled board JPG — other board images may need adjusted bounds in `board_layout.h`
-- SVG piece icons require SDL2_image built with librsvg support
+- SVG piece icons use librsvg at runtime; PNG copies are generated at build time when `rsvg-convert` is available
 
 ---
 
@@ -246,6 +248,7 @@ chess-boot-loader/
 │   ├── game_ui.h           # status bar and game-over overlay
 │   ├── move_validator.h    # move legality and check detection
 │   ├── piece_renderer.h    # language icon rendering
+│   ├── svg_loader.h        # SVG rasterization via librsvg
 │   └── version.h           # release version string
 └── src/
     ├── main.cpp
@@ -257,7 +260,8 @@ chess-boot-loader/
     ├── game_controller.cpp
     ├── game_ui.cpp
     ├── move_validator.cpp
-    └── piece_renderer.cpp
+    ├── piece_renderer.cpp
+    └── svg_loader.cpp
 ```
 
 ---

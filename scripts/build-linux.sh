@@ -10,8 +10,13 @@ for pkg in sdl2 SDL2_image SDL2_ttf; do
 done
 
 if ! pkg-config --exists librsvg-2.0 2>/dev/null; then
-    echo "Warning: librsvg-2.0 not found. SVG piece icons may not load."
-    echo "Install with: sudo apt install librsvg2-dev"
+    echo "Warning: librsvg-2.0 not found. SVG piece icons will not load."
+    echo "Install with: sudo apt install librsvg2-dev libcairo2-dev"
+fi
+
+if ! command -v rsvg-convert >/dev/null 2>&1; then
+    echo "Warning: rsvg-convert not found. Build will skip PNG pre-rasterization."
+    echo "Install with: sudo apt install librsvg2-bin"
 fi
 
 echo "==> Configuring..."
