@@ -26,7 +26,77 @@ Same icon on both sides — the circle background color tells them apart.
 
 ---
 
-## How it works
+## Installation
+
+### Overview
+The Chess Boot Loader is a lightweight application designed to load and run chess games with a graphical interface. This README provides installation instructions and usage guidelines for users.
+
+### Prerequisites
+Before installing the Chess Boot Loader, ensure you have the following dependencies installed on your Linux system:
+
+```bash
+sudo apt install libsdl2-2.0-0 libsdl2-image-2.0-0 libsdl2-ttf-2.0-0 librsvg2-2
+```
+
+### Step 1: Download the Release Package
+You can download the latest release from the GitHub repository or use the following command to clone the repository:
+
+```bash
+git clone https://github.com/kidusshoa/chess-boot-loader.git
+cd chess-boot-loader
+```
+
+### Step 2: Extract the Package
+If you've downloaded a `.tar.gz` file, extract it using:
+
+```bash
+tar -xzf chess-boot-loader-0.1.0-linux-x86_64.tar.gz
+cd chess-boot-loader-0.1.0-linux-x86_64
+```
+
+### Step 3: Run the Application
+To run the application, execute the following command:
+
+```bash
+./chess-boot-loader.sh
+```
+
+### Auto-start on Login
+To make the Chess Boot Loader start automatically when you log in, follow these steps:
+
+1. Create the autostart directory if it doesn't exist:
+
+   ```bash
+   mkdir -p ~/.config/autostart
+   ```
+
+2. Copy the desktop entry file:
+
+   ```bash
+   cp packaging/chess-boot-loader.desktop ~/.config/autostart/
+   ```
+
+3. Edit the file and set the `Exec=` line to the path of your binary, for example:
+
+   ```bash
+   Exec=/home/you/chess-boot-loader-0.1.0-linux-x86_64/chess-boot-loader
+   ```
+
+### Testing the Release
+After installation, you can test the application by running:
+
+```bash
+cd /path/to/extracted/folder
+./chess-boot-loader.sh
+```
+
+### Contributing
+If you would like to contribute to the project, please fork the repository and submit a pull request.
+
+### License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
 
 ### Boot splash
 
