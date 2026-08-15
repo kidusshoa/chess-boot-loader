@@ -37,7 +37,7 @@ SDL_Surface* cairo_surface_to_sdl(cairo_surface_t* cairo_surface, int width, int
     return converted;
 }
 
-}  // namespace
+
 
 SDL_Surface* load_svg_surface(const char* path, int width, int height) {
     GError* error = nullptr;
