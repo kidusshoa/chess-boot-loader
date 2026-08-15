@@ -94,7 +94,7 @@ void GameController::update_game_state(const ChessBoard& board) {
         return;
     }
 
-    in_check_ = is_in_check(board, current_player_);
+    in_check_ = is_in_check();
 }
 
 bool GameController::select_piece(const ChessBoard& board, int file, int rank) {
