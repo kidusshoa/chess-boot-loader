@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=chess-boot-loader
+Comment=Boot-themed programming-language chess game
+Exec=chess-boot-loader
+Icon=applications-games
+Terminal=false
+Categories=Game;BoardGame;

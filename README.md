@@ -207,16 +207,122 @@ Play a short game, then press **R** to verify restart works.
 
 ---
 
+## Compile & release
+
+### Important: what “bootable” means here
+
+This project is a **Linux desktop game** with a BIOS-style **boot splash screen**. It is **not** a real PC bootloader — it does not replace GRUB, run before the OS, or boot from a USB on bare metal.
+
+When you “release” it, you ship a compiled game binary + assets that users run inside Linux (like any normal app).
+
+---
+
+### 1. Compile a release build
+
+On your Linux machine:
+
+```bash
+sudo apt install build-essential cmake pkg-config \
+  libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev \
+  librsvg2-dev libcairo2-dev librsvg2-bin
+
+git pull
+./scripts/build-linux.sh
+./build/chess-boot-loader
+```
+
+---
+
+### 2. Create a portable release package
+
+This builds the game and packs the binary + assets into a `.tar.gz`:
+
+```bash
+./scripts/release-linux.sh
+```
+
+Output:
+
+```
+dist/chess-boot-loader-0.1.0-linux-x86_64/
+dist/chess-boot-loader-0.1.0-linux-x86_64.tar.gz
+```
+
+Copy the `.tar.gz` to any Linux PC, extract, and run:
+
+```bash
+tar -xzf chess-boot-loader-0.1.0-linux-x86_64.tar.gz
+cd chess-boot-loader-0.1.0-linux-x86_64
+sudo apt install libsdl2-2.0-0 libsdl2-image-2.0-0 libsdl2-ttf-2.0-0 librsvg2-2
+./chess-boot-loader.sh
+```
+
+---
+
+### 3. Publish on GitHub
+
+```bash
+git add .
+git commit -m "Release v0.1.0"
+git push
+
+git tag -a v0.1.0 -m "chess-boot-loader v0.1.0"
+git push origin v0.1.0
+```
+
+Then on GitHub: **Releases → Draft a new release →** pick tag `v0.1.0`, upload `dist/chess-boot-loader-0.1.0-linux-x86_64.tar.gz`.
+
+Or with GitHub CLI:
+
+```bash
+gh release create v0.1.0 dist/chess-boot-loader-0.1.0-linux-x86_64.tar.gz \
+  --title "v0.1.0" \
+  --notes "Boot-themed chess game for Linux."
+```
+
+---
+
+### 4. Auto-start on login (boot straight into chess)
+
+If you want the game to launch when your Linux desktop starts:
+
+```bash
+mkdir -p ~/.config/autostart
+cp packaging/chess-boot-loader.desktop ~/.config/autostart/
+```
+
+Edit the desktop file and set `Exec=` to the full path of your binary, e.g.:
+
+```
+Exec=/home/you/games/chess-boot-loader-0.1.0-linux-x86_64/chess-boot-loader
+```
+
+Log out and back in — the game should open automatically after login.
+
+---
+
+### 5. Optional: install system-wide
+
+```bash
+sudo install -m 755 build/chess-boot-loader /usr/local/bin/
+sudo mkdir -p /usr/local/share/chess-boot-loader/assets/pieces
+sudo cp -r assets/* /usr/local/share/chess-boot-loader/assets/
+sudo cp packaging/chess-boot-loader.desktop /usr/share/applications/
+```
+
+Then run from anywhere:
+
+```bash
+CHESS_BOOT_LOADER_ASSETS=/usr/local/share/chess-boot-loader/assets chess-boot-loader
+```
+
+---
+
 ## Release
 
 This is **v0.1.0** — a playable local two-player chess game with boot splash, language-themed pieces, and standard rules (minus castling/en passant).
 
-To tag a release after verifying on your Linux machine:
-
-```bash
-git tag -a v0.1.0 -m "chess-boot-loader v0.1.0"
-git push origin v0.1.0
-```
+Use `./scripts/release-linux.sh` to build the distributable tarball before tagging.
 
 ---
 
@@ -227,7 +333,11 @@ chess-boot-loader/
 ├── CMakeLists.txt
 ├── README.md
 ├── scripts/
-│   └── build-linux.sh      # configure + build helper for Linux
+│   ├── build-linux.sh          # configure + build
+│   ├── release-linux.sh        # build + create .tar.gz release
+│   └── run-chess-boot-loader.sh
+├── packaging/
+│   └── chess-boot-loader.desktop  # autostart / app menu entry
 ├── assets/
 │   ├── chess-board-banner-vector.jpg
 │   └── pieces/
