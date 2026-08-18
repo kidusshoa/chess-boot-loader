@@ -30,6 +30,20 @@ This is a **real** boot path: no Linux, no SDL, freestanding C only.
 ./scripts/install-deps-linux.sh
 ```
 
+## Requirements (macOS)
+
+```bash
+./scripts/install-deps-macos.sh
+```
+
+Or manually:
+
+```bash
+brew install nasm qemu xorriso i686-elf-grub i686-elf-gcc
+```
+
+---
+
 Or manually:
 
 ```bash
