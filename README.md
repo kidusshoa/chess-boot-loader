@@ -24,6 +24,19 @@ Same icon on both sides — the circle background color tells them apart.
 - **Build:** CMake + pkg-config
 - **Target:** Linux
 
+### Bare-metal boot (QEMU)
+
+For a **real** bootable kernel (GRUB → Multiboot2 → VGA POST text), use the `bare-metal/` tree on Linux:
+
+```bash
+cd bare-metal
+./scripts/install-deps-linux.sh   # once
+make iso
+./scripts/run-qemu.sh
+```
+
+Full details: [bare-metal/README.md](bare-metal/README.md)
+
 ---
 
 ## Installation
@@ -279,11 +292,14 @@ Play a short game, then press **R** to verify restart works.
 
 ## Compile & release
 
-### Important: what “bootable” means here
+### Two ways to run chess-boot-loader
 
-This project is a **Linux desktop game** with a BIOS-style **boot splash screen**. It is **not** a real PC bootloader — it does not replace GRUB, run before the OS, or boot from a USB on bare metal.
+| Track | What it is | How to run |
+|-------|------------|------------|
+| **Desktop app** (repo root) | Linux SDL game with a BIOS-style splash screen | `./build/chess-boot-loader` |
+| **Bare-metal kernel** (`bare-metal/`) | Real Multiboot2 kernel that boots in QEMU | `cd bare-metal && make qemu` |
 
-When you “release” it, you ship a compiled game binary + assets that users run inside Linux (like any normal app).
+The desktop splash is a **mock** boot sequence drawn in SDL. The bare-metal kernel is a **real** boot path: GRUB loads your kernel, which prints POST text to VGA and halts. Chess on bare metal is planned next — see [bare-metal/README.md](bare-metal/README.md).
 
 ---
 
@@ -400,6 +416,7 @@ Use `./scripts/release-linux.sh` to build the distributable tarball before taggi
 
 ```
 chess-boot-loader/
+├── bare-metal/                 # real Multiboot2 kernel for QEMU (see bare-metal/README.md)
 ├── CMakeLists.txt
 ├── README.md
 ├── scripts/
@@ -466,4 +483,4 @@ chess-boot-loader/
 - Move history (algebraic notation)
 - Sound effects
 - Castling and en passant
-- Bare-metal bootloader version (separate project)
+- Bare-metal chess UI (keyboard + framebuffer in `bare-metal/`)
