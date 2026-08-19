@@ -3,6 +3,7 @@
 #include "multiboot2.h"
 #include "serial.h"
 #include "vbe.h"
+#include "vga_mode13.h"
 
 static void framebuffer_from_tag(struct framebuffer* fb, struct multiboot_tag_framebuffer* fb_tag) {
     fb->address = (uint32_t*)(uintptr_t)fb_tag->framebuffer_addr;
@@ -27,13 +28,12 @@ int framebuffer_init(struct framebuffer* fb, struct multiboot_boot_info* boot_in
     fb->pitch = 0;
     fb->bpp = 0;
 
-    if (bochs_vbe_init(fb, 1024, 768, 32)) {
-        serial_write_line("framebuffer: bochs vbe 1024x768x32");
+    if (vga_mode13_init(fb)) {
         return 1;
     }
 
-    if (bochs_vbe_init(fb, 800, 600, 32)) {
-        serial_write_line("framebuffer: bochs vbe 800x600x32");
+    if (bochs_vbe_init(fb, 1024, 768, 32)) {
+        serial_write_line("framebuffer: bochs vbe 1024x768x32");
         return 1;
     }
 
@@ -72,6 +72,10 @@ int framebuffer_init(struct framebuffer* fb, struct multiboot_boot_info* boot_in
         }
     }
 
+    if (vga_mode13_init(fb)) {
+        return 1;
+    }
+
     serial_write_line("framebuffer: init failed");
     return 0;
 }
@@ -94,6 +98,10 @@ uint32_t* framebuffer_at(struct framebuffer* fb, int x, int y) {
 
     if (bytes_per_pixel == 4) {
         return (uint32_t*)(row + (uint32_t)x * 4u);
+    }
+
+    if (bytes_per_pixel == 1) {
+        return (uint32_t*)(row + (uint32_t)x);
     }
 
     if (bytes_per_pixel == 3) {

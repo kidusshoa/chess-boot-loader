@@ -146,16 +146,28 @@ int font_char_height(void) {
 }
 
 void font_draw_char(int x, int y, char character, uint32_t color) {
+    struct framebuffer* fb = gfx_framebuffer();
     const unsigned char index = (unsigned char)character;
     const uint8_t* glyph = font8x8_basic[index];
 
     for (int row = 0; row < 8; ++row) {
         for (int col = 0; col < 8; ++col) {
-            if (glyph[row] & (1 << col)) {
-                uint32_t* pixel = framebuffer_at(gfx_framebuffer(), x + col, y + row);
-                if (pixel) {
-                    *pixel = color;
-                }
+            if (!(glyph[row] & (1 << col))) {
+                continue;
+            }
+
+            const int px = x + col;
+            const int py = y + row;
+
+            if (fb && fb->bpp == 8) {
+                uint8_t* pixels = (uint8_t*)fb->address;
+                pixels[(uint32_t)py * fb->pitch + (uint32_t)px] = (uint8_t)color;
+                continue;
+            }
+
+            uint32_t* pixel = framebuffer_at(fb, px, py);
+            if (pixel) {
+                *pixel = color;
             }
         }
     }

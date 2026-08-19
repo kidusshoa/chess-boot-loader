@@ -6,18 +6,48 @@
 #include "gfx.h"
 #include "input.h"
 
-#define COLOR_BG 0xFF1A1A2E
-#define COLOR_LIGHT_SQ 0xFFEEEED2
-#define COLOR_DARK_SQ 0xFF769656
-#define COLOR_SELECT 0xFFBACA44
-#define COLOR_MOVE 0xFF829769
-#define COLOR_CURSOR 0xFFFFD166
-#define COLOR_WHITE_RING 0xFFF5F5F5
-#define COLOR_BLACK_RING 0xFF222222
-#define COLOR_STATUS 0xFFFFFFFF
-#define COLOR_STATUS_DIM 0xFFCCCCCC
-
 #define MAX_LEGAL_MOVES 64
+
+static uint32_t g_color_bg;
+static uint32_t g_color_light_sq;
+static uint32_t g_color_dark_sq;
+static uint32_t g_color_select;
+static uint32_t g_color_move;
+static uint32_t g_color_cursor;
+static uint32_t g_color_white_ring;
+static uint32_t g_color_black_ring;
+static uint32_t g_color_status;
+static uint32_t g_color_status_dim;
+static uint32_t g_color_text;
+
+static void ui_setup_colors(void) {
+    if (gfx_is_8bpp()) {
+        g_color_bg = 0;
+        g_color_light_sq = 1;
+        g_color_dark_sq = 2;
+        g_color_select = 5;
+        g_color_move = 6;
+        g_color_cursor = 4;
+        g_color_white_ring = 7;
+        g_color_black_ring = 8;
+        g_color_status = 3;
+        g_color_status_dim = 9;
+        g_color_text = 10;
+        return;
+    }
+
+    g_color_bg = GFX_RGB(0x1A, 0x1A, 0x2E);
+    g_color_light_sq = GFX_RGB(0xEE, 0xEE, 0xD2);
+    g_color_dark_sq = GFX_RGB(0x76, 0x96, 0x56);
+    g_color_select = GFX_RGB(0xBA, 0xCA, 0x44);
+    g_color_move = GFX_RGB(0x82, 0x97, 0x69);
+    g_color_cursor = GFX_RGB(0xFF, 0xD1, 0x66);
+    g_color_white_ring = GFX_RGB(0xF5, 0xF5, 0xF5);
+    g_color_black_ring = GFX_RGB(0x22, 0x22, 0x22);
+    g_color_status = GFX_RGB(0xFF, 0xFF, 0xFF);
+    g_color_status_dim = GFX_RGB(0xCC, 0xCC, 0xCC);
+    g_color_text = GFX_RGB(0x11, 0x11, 0x11);
+}
 
 typedef struct {
     int board_x;
@@ -113,11 +143,11 @@ static void ui_draw_piece(const ui_state_t* state, int file, int rank, const pie
     const int square_y = ui_square_screen_y(state, rank);
     const int center_x = square_x + state->square_size / 2;
     const int center_y = square_y + state->square_size / 2;
-    const int radius = state->square_size / 2 - 8;
+    const int radius = state->square_size / 2 - (gfx_is_8bpp() ? 3 : 8);
 
-    const uint32_t ring_color = piece->color == COLOR_WHITE ? COLOR_WHITE_RING : COLOR_BLACK_RING;
+    const uint32_t ring_color = piece->color == COLOR_WHITE ? g_color_white_ring : g_color_black_ring;
     gfx_fill_circle(center_x, center_y, radius, ring_color);
-    gfx_draw_rect(square_x + 4, square_y + 4, state->square_size - 8, state->square_size - 8, 0xFF000000);
+    gfx_draw_rect(square_x + 2, square_y + 2, state->square_size - 4, state->square_size - 4, g_color_black_ring);
 
     const bitmap_t* sprite = assets_piece_bitmap(piece->type);
     if (sprite && sprite->pixels) {
@@ -135,25 +165,25 @@ static void ui_draw_piece(const ui_state_t* state, int file, int rank, const pie
 
     const int text_x = center_x - (label_len * font_char_width()) / 2;
     const int text_y = center_y - font_char_height() / 2;
-    font_draw_string(text_x, text_y, label, 0xFF111111);
+    font_draw_string(text_x, text_y, label, g_color_text);
 }
 
 static void ui_draw(ui_state_t* state, struct framebuffer* fb) {
     (void)fb;
 
-    gfx_clear(COLOR_BG);
+    gfx_clear(g_color_bg);
 
     for (int rank = 0; rank < 8; ++rank) {
         for (int file = 0; file < 8; ++file) {
             const int x = ui_square_screen_x(state, file);
             const int y = ui_square_screen_y(state, rank);
             const bool light = (file + rank) % 2 == 0;
-            uint32_t color = light ? COLOR_LIGHT_SQ : COLOR_DARK_SQ;
+            uint32_t color = light ? g_color_light_sq : g_color_dark_sq;
 
             if (state->has_selection && state->selected_file == file && state->selected_rank == rank) {
-                color = COLOR_SELECT;
+                color = g_color_select;
             } else if (square_has_legal_move(state, file, rank)) {
-                color = COLOR_MOVE;
+                color = g_color_move;
             }
 
             gfx_fill_rect(x, y, state->square_size, state->square_size, color);
@@ -162,7 +192,7 @@ static void ui_draw(ui_state_t* state, struct framebuffer* fb) {
 
     const int cursor_x = ui_square_screen_x(state, state->cursor_file);
     const int cursor_y = ui_square_screen_y(state, state->cursor_rank);
-    gfx_draw_rect(cursor_x + 2, cursor_y + 2, state->square_size - 4, state->square_size - 4, COLOR_CURSOR);
+    gfx_draw_rect(cursor_x + 1, cursor_y + 1, state->square_size - 2, state->square_size - 2, g_color_cursor);
 
     for (int rank = 0; rank < 8; ++rank) {
         for (int file = 0; file < 8; ++file) {
@@ -173,14 +203,16 @@ static void ui_draw(ui_state_t* state, struct framebuffer* fb) {
         }
     }
 
-    const int status_y = state->board_y + state->square_size * 8 + 24;
-    font_draw_string(state->board_x, status_y, state->status_message, COLOR_STATUS);
-    font_draw_string(
-        state->board_x,
-        status_y + 16,
-        "Arrows: move  Space/Enter: select  R: restart",
-        COLOR_STATUS_DIM
-    );
+    const int status_y = state->board_y + state->square_size * 8 + 8;
+    font_draw_string(state->board_x, status_y, state->status_message, g_color_status);
+    if (status_y + 10 < (int)gfx_framebuffer()->height) {
+        font_draw_string(
+            state->board_x,
+            status_y + 10,
+            "Arrows move  Space select  R restart",
+            g_color_status_dim
+        );
+    }
 }
 
 static void ui_try_select_or_move(ui_state_t* state) {
@@ -277,19 +309,19 @@ void ui_run(struct framebuffer* fb) {
     ui_state_t state;
 
     int board_pixels = 640;
-    if ((int)fb->width - 40 < board_pixels) {
-        board_pixels = (int)fb->width - 40;
+    if ((int)fb->width - 8 < board_pixels) {
+        board_pixels = (int)fb->width - 8;
     }
-    if ((int)fb->height - 80 < board_pixels) {
-        board_pixels = (int)fb->height - 80;
+    if ((int)fb->height - 16 < board_pixels) {
+        board_pixels = (int)fb->height - 16;
     }
-    if (board_pixels < 320) {
-        board_pixels = 320;
+    if (board_pixels < 160) {
+        board_pixels = 160;
     }
     board_pixels = (board_pixels / 8) * 8;
 
     const int margin_x = ((int)fb->width - board_pixels) / 2;
-    const int margin_y = ((int)fb->height - board_pixels - 48) / 2;
+    const int margin_y = ((int)fb->height - board_pixels - 16) / 2;
 
     state.board_x = margin_x > 0 ? margin_x : 0;
     state.board_y = margin_y > 0 ? margin_y : 0;
@@ -305,6 +337,7 @@ void ui_run(struct framebuffer* fb) {
     state.status_message = "White to move";
 
     gfx_bind(fb);
+    ui_setup_colors();
     chess_board_reset(&state.board);
     ui_update_status(&state);
     ui_draw(&state, fb);
