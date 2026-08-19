@@ -15,12 +15,22 @@ The desktop chess game in the repo root (`src/`, SDL2) and this kernel are **two
 ## What this boots
 
 1. **GRUB** loads `kernel.bin` (Multiboot2)
-2. **`boot.asm`** sets up stack, jumps to C
-3. **`kernel.c`** checks Multiboot magic
-4. **`boot_log.c`** prints a real POST-style sequence to **VGA text mode** (`0xB8000`)
-5. CPU halts — chess rendering for bare metal comes in a later step
+2. **`boot.asm`** sets up stack, requests 1024×768 framebuffer
+3. **`boot_log.c`** prints POST-style text on VGA
+4. **`framebuffer.c` + `gfx.c`** draw the chess board in graphics mode
+5. **`ui.c` + `chess.c`** run a playable two-player game with keyboard input
 
-This is a **real** boot path: no Linux, no SDL, freestanding C only.
+Piece icons come from **`assets/pieces/*.svg`**, converted at build time to embedded RGBA bitmaps (`generated/assets_gen.c`). If `rsvg-convert` is missing, placeholder sprites are used instead.
+
+---
+
+## Controls (QEMU window must have focus)
+
+| Key | Action |
+|-----|--------|
+| Arrow keys | Move cursor |
+| Space / Enter | Select piece or move |
+| R | Restart game |
 
 ---
 
@@ -39,8 +49,10 @@ This is a **real** boot path: no Linux, no SDL, freestanding C only.
 Or manually:
 
 ```bash
-brew install nasm qemu xorriso i686-elf-grub i686-elf-gcc
+brew install nasm qemu xorriso i686-elf-grub i686-elf-gcc librsvg
 ```
+
+`librsvg` provides `rsvg-convert` for embedding real piece icons at build time (optional).
 
 ---
 
@@ -67,7 +79,7 @@ Or:
 make qemu
 ```
 
-You should see green POST text in the QEMU window, ending with `Boot complete. Chess runtime is next.`
+You should see green POST text, then a **graphical chess board** with language-themed piece icons.
 
 ---
 
@@ -88,32 +100,49 @@ Install an `i686-elf` toolchain from OSDev if you prefer a fully freestanding co
 
 ```
 bare-metal/
-├── linker.ld           # kernel linked at 1 MiB
-├── grub.cfg            # GRUB menu → multiboot2
+├── linker.ld
+├── grub.cfg
 ├── Makefile
+├── generated/          # assets_gen.c (build output)
 ├── include/
 │   ├── kernel.h
+│   ├── multiboot2.h
+│   ├── framebuffer.h
+│   ├── gfx.h
+│   ├── font.h
+│   ├── bitmap.h
+│   ├── assets.h
+│   ├── chess.h
+│   ├── input.h
+│   ├── ui.h
 │   ├── vga.h
 │   └── boot_log.h
 ├── src/
-│   ├── boot.asm        # Multiboot2 header + entry
+│   ├── boot.asm
 │   ├── kernel.c
-│   ├── vga.c           # VGA text driver
-│   └── boot_log.c      # POST boot sequence
+│   ├── boot_log.c
+│   ├── framebuffer.c
+│   ├── gfx.c
+│   ├── font.c
+│   ├── chess.c
+│   ├── input.c
+│   ├── ui.c
+│   └── vga.c
 └── scripts/
+    ├── generate_assets.py
     ├── run-qemu.sh
-    └── install-deps-linux.sh
+    ├── install-deps-linux.sh
+    └── install-deps-macos.sh
 ```
 
 ---
 
-## Roadmap to chess on bare metal
+## Roadmap
 
-1. **Done** — Multiboot2 kernel + VGA boot log in QEMU  
-2. **Next** — PS/2 keyboard input  
-3. **Next** — VGA mode 13h or linear framebuffer board  
-4. **Next** — Port chess logic (reuse rules from `../src/move_validator.cpp` ideas, rewrite freestanding)  
-5. **Next** — Blit language icons as raw bitmaps (no SVG/librsvg in kernel)
+1. **Done** — Multiboot2 kernel + VGA boot log + GUI chess in QEMU
+2. **Next** — PS/2 mouse click input
+3. **Next** — Board background JPG as embedded bitmap
+4. **Next** — Castling / en passant
 
 The existing SDL chess code cannot be linked into this kernel. Chess **rules** can be reimplemented; **rendering** must use direct hardware/framebuffer.
 

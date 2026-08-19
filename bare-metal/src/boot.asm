@@ -14,6 +14,15 @@ header_start:
     dd HEADER_LENGTH
     dd CHECKSUM
 
+    ; Framebuffer request tag (1024x768x32)
+    align 8
+    dd 5
+    dd 0
+    dd 20
+    dd 1024
+    dd 768
+    dd 32
+
     ; End tag
     dw 0
     dw 0

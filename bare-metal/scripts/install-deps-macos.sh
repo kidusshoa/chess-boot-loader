@@ -8,7 +8,7 @@ command -v brew >/dev/null || {
     exit 1
 }
 
-brew install nasm qemu xorriso i686-elf-grub i686-elf-gcc
+brew install nasm qemu xorriso i686-elf-grub i686-elf-gcc librsvg
 
 echo
 echo "Build and run:"

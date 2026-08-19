@@ -29,37 +29,36 @@ void boot_log_run(void) {
     write_ok();
 
     vga_writestring("Loading chess engine...");
-    delay_ticks(8000000);
+    delay_ticks(500000);
     write_ok();
 
     vga_writestring("Initializing C king...");
-    delay_ticks(2000000);
+    delay_ticks(200000);
     write_ok();
 
     vga_writestring("Initializing Java queen...");
-    delay_ticks(2000000);
+    delay_ticks(200000);
     write_ok();
 
     vga_writestring("Initializing Python bishop...");
-    delay_ticks(2000000);
+    delay_ticks(200000);
     write_ok();
 
     vga_writestring("Initializing JavaScript knight...");
-    delay_ticks(2000000);
+    delay_ticks(200000);
     write_ok();
 
     vga_writestring("Initializing Rust rook...");
-    delay_ticks(2000000);
+    delay_ticks(200000);
     write_ok();
 
     vga_writestring("Initializing Go pawn...");
-    delay_ticks(2000000);
+    delay_ticks(200000);
     write_ok();
 
     vga_write_line("");
     vga_set_color(VGA_COLOR_YELLOW, VGA_COLOR_BLACK);
-    vga_write_line("Boot complete. Chess runtime is next.");
+    vga_write_line("Boot complete. Starting chess UI...");
     vga_set_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
-    vga_write_line("Bare-metal chess UI is not linked yet.");
-    vga_write_line("Halt.");
+    delay_ticks(1000000);
 }

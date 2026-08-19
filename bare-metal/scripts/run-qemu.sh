@@ -13,5 +13,7 @@ qemu-system-i386 \
     -cdrom build/chess-boot-loader.iso \
     -m 128M \
     -serial stdio \
+    -vga std \
+    -display cocoa \
     -no-reboot \
     -no-shutdown
