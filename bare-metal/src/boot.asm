@@ -14,16 +14,8 @@ header_start:
     dd HEADER_LENGTH
     dd CHECKSUM
 
-    ; Framebuffer request tag (1024x768x32)
+    ; End tag (required)
     align 8
-    dd 5
-    dd 0
-    dd 20
-    dd 1024
-    dd 768
-    dd 32
-
-    ; End tag
     dw 0
     dw 0
     dd 8
@@ -36,8 +28,8 @@ extern kernel_main
 _start:
     cli
     mov esp, stack_top
-    push ebx                  ; multiboot info pointer
-    push eax                  ; multiboot magic
+    push ebx
+    push eax
     call kernel_main
 
 .hang:

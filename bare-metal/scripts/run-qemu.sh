@@ -7,14 +7,25 @@ cd "${ROOT_DIR}"
 echo "==> Building bare-metal ISO..."
 make iso
 
+SERIAL_LOG="${ROOT_DIR}/build/serial.log"
+rm -f "${SERIAL_LOG}"
+
 echo "==> Launching QEMU (i386)..."
+echo "    Serial log: ${SERIAL_LOG}"
 echo "    Close the QEMU window or press Ctrl+C here to stop."
 qemu-system-i386 \
     -machine pc \
     -cdrom build/chess-boot-loader.iso \
     -m 128M \
-    -serial stdio \
+    -serial "file:${SERIAL_LOG}" \
     -vga std \
     -display cocoa \
     -no-reboot \
     -no-shutdown
+
+echo "==> Serial output:"
+if [[ -s "${SERIAL_LOG}" ]]; then
+    cat "${SERIAL_LOG}"
+else
+    echo "(empty - kernel may not have reached serial_init)"
+fi
