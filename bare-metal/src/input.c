@@ -1,13 +1,16 @@
 #include "input.h"
 
 #include "io.h"
+#include "serial.h"
 
 #define PS2_DATA 0x60
 #define PS2_STATUS 0x64
 #define PS2_COMMAND 0x64
+#define COM1 0x3F8
 
 static bool extended_prefix;
 static bool set2_break_prefix;
+static bool mouse_enabled;
 
 static int screen_width = 640;
 static int screen_height = 480;
@@ -20,18 +23,27 @@ static bool mouse_click_pending;
 static uint8_t mouse_packet[3];
 static int mouse_packet_index;
 
-static void ps2_wait_write(void) {
+static bool ps2_input_ready(void) {
+    return (inb(PS2_STATUS) & 0x02) == 0;
+}
+
+static bool ps2_output_ready(void) {
+    return (inb(PS2_STATUS) & 0x01) != 0;
+}
+
+static bool ps2_wait_input(void) {
     for (int i = 0; i < 100000; ++i) {
-        if ((inb(PS2_STATUS) & 0x02) == 0) {
-            return;
+        if (ps2_input_ready()) {
+            return true;
         }
         io_wait();
     }
+    return false;
 }
 
-static bool ps2_wait_read(uint8_t* value) {
+static bool ps2_read_byte(uint8_t* value) {
     for (int i = 0; i < 100000; ++i) {
-        if (inb(PS2_STATUS) & 0x01) {
+        if (ps2_output_ready()) {
             *value = inb(PS2_DATA);
             return true;
         }
@@ -40,63 +52,40 @@ static bool ps2_wait_read(uint8_t* value) {
     return false;
 }
 
-static void ps2_flush_output(void) {
-    for (int i = 0; i < 32; ++i) {
-        if ((inb(PS2_STATUS) & 0x01) == 0) {
+static void ps2_flush(void) {
+    for (int i = 0; i < 64; ++i) {
+        if (!ps2_output_ready()) {
             return;
         }
         (void)inb(PS2_DATA);
     }
 }
 
-static void ps2_write_command(uint8_t value) {
-    ps2_wait_write();
-    outb(PS2_COMMAND, value);
-}
-
-static void ps2_write_keyboard(uint8_t value) {
-    ps2_wait_write();
-    outb(PS2_COMMAND, 0xD4);
-    ps2_wait_write();
-    outb(PS2_DATA, value);
-}
-
-static void ps2_write_mouse(uint8_t value) {
-    ps2_wait_write();
-    outb(PS2_COMMAND, 0xD4);
-    ps2_wait_write();
-    outb(PS2_DATA, value);
-}
-
-static bool ps2_read_ack(void) {
-    uint8_t response = 0;
-    if (!ps2_wait_read(&response)) {
+static bool ps2_command(uint8_t command) {
+    if (!ps2_wait_input()) {
         return false;
     }
-    return response == 0xFA;
+    outb(PS2_COMMAND, command);
+    return true;
 }
 
-static void ps2_configure_controller(void) {
-    ps2_write_command(0x20);
-    uint8_t config = 0;
-    if (!ps2_wait_read(&config)) {
-        return;
+static bool ps2_write_data(uint8_t value) {
+    if (!ps2_wait_input()) {
+        return false;
     }
-
-    config &= ~(uint8_t)0x30;
-    config |= 0x40;
-
-    ps2_write_command(0x60);
-    ps2_wait_write();
-    outb(PS2_DATA, config);
+    outb(PS2_DATA, value);
+    return true;
 }
 
-static void keyboard_enable_scanning(void) {
-    ps2_write_command(0xAE);
-    io_wait();
+static bool ps2_write_mouse(uint8_t value) {
+    if (!ps2_command(0xD4)) {
+        return false;
+    }
+    return ps2_write_data(value);
+}
 
-    ps2_write_keyboard(0xF4);
-    (void)ps2_read_ack();
+static bool ps2_write_keyboard(uint8_t value) {
+    return ps2_write_data(value);
 }
 
 static void mouse_clamp_position(void) {
@@ -156,21 +145,40 @@ static void mouse_handle_byte(uint8_t byte) {
     mouse_handle_packet();
 }
 
-static void mouse_enable_streaming(void) {
-    ps2_write_command(0xA8);
+static bool mouse_try_init(void) {
+    ps2_command(0xA8);
     io_wait();
 
-    ps2_write_mouse(0xFF);
-    (void)ps2_read_ack();
+    if (!ps2_write_mouse(0xFF)) {
+        return false;
+    }
+
     uint8_t response = 0;
-    (void)ps2_wait_read(&response);
-    (void)ps2_wait_read(&response);
+    if (!ps2_read_byte(&response) || response != 0xFA) {
+        return false;
+    }
+    if (!ps2_read_byte(&response) || response != 0xAA) {
+        return false;
+    }
+    if (!ps2_read_byte(&response)) {
+        return false;
+    }
 
-    ps2_write_mouse(0xF6);
-    (void)ps2_read_ack();
+    if (!ps2_write_mouse(0xF6)) {
+        return false;
+    }
+    if (!ps2_read_byte(&response) || response != 0xFA) {
+        return false;
+    }
 
-    ps2_write_mouse(0xF4);
-    (void)ps2_read_ack();
+    if (!ps2_write_mouse(0xF4)) {
+        return false;
+    }
+    if (!ps2_read_byte(&response) || response != 0xFA) {
+        return false;
+    }
+
+    return true;
 }
 
 static key_t scancode_to_key(uint8_t scancode, bool extended) {
@@ -246,19 +254,104 @@ static key_t keyboard_handle_byte(uint8_t scancode) {
     return scancode_to_key(scancode, extended);
 }
 
+static key_t serial_poll(void) {
+    if ((inb(COM1 + 5) & 0x01) == 0) {
+        return KEY_NONE;
+    }
+
+    const uint8_t character = inb(COM1);
+    switch (character) {
+        case 'w':
+        case 'W':
+            return KEY_UP;
+        case 's':
+        case 'S':
+            return KEY_DOWN;
+        case 'a':
+        case 'A':
+            return KEY_LEFT;
+        case 'd':
+        case 'D':
+            return KEY_RIGHT;
+        case ' ':
+        case '\r':
+        case '\n':
+            return KEY_SELECT;
+        case 'r':
+        case 'R':
+            return KEY_RESTART;
+        default:
+            return KEY_NONE;
+    }
+}
+
 void input_init(void) {
     extended_prefix = false;
     set2_break_prefix = false;
+    mouse_enabled = false;
     mouse_packet_index = 0;
     mouse_left_down = false;
     mouse_click_pending = false;
 
-    ps2_flush_output();
-    ps2_configure_controller();
-    ps2_flush_output();
+    serial_write_line("input: initializing ps/2");
 
-    keyboard_enable_scanning();
-    mouse_enable_streaming();
+    ps2_command(0xAD);
+    ps2_command(0xA7);
+    ps2_flush();
+
+    if (!ps2_command(0x20)) {
+        serial_write_line("input: failed to read config");
+        ps2_command(0xAE);
+        return;
+    }
+
+    uint8_t config = 0;
+    if (!ps2_read_byte(&config)) {
+        serial_write_line("input: config timeout");
+        ps2_command(0xAE);
+        return;
+    }
+
+    config &= (uint8_t)~0x33;
+    config |= 0x40;
+
+    if (!ps2_command(0x60) || !ps2_write_data(config)) {
+        serial_write_line("input: failed to write config");
+        ps2_command(0xAE);
+        return;
+    }
+
+    ps2_flush();
+
+    if (!ps2_command(0xAA)) {
+        serial_write_line("input: controller self-test failed to start");
+    } else {
+        uint8_t test_result = 0;
+        if (ps2_read_byte(&test_result) && test_result == 0x55) {
+            serial_write_line("input: controller ok");
+        } else {
+            serial_write_line("input: controller self-test bad result");
+        }
+    }
+
+    ps2_flush();
+    ps2_command(0xAE);
+
+    if (!ps2_write_keyboard(0xF4)) {
+        serial_write_line("input: failed to enable keyboard scanning");
+        return;
+    }
+
+    uint8_t ack = 0;
+    if (ps2_read_byte(&ack) && ack == 0xFA) {
+        serial_write_line("input: keyboard ready");
+    } else {
+        serial_write_line("input: keyboard ack missing");
+    }
+
+    ps2_flush();
+    mouse_enabled = mouse_try_init();
+    serial_write_line(mouse_enabled ? "input: mouse ready" : "input: mouse unavailable");
 
     mouse_x = screen_width / 2;
     mouse_y = screen_height / 2;
@@ -281,6 +374,11 @@ void input_set_screen_size(int width, int height) {
 input_event_t input_poll(void) {
     input_event_t event = {0};
 
+    const key_t serial_key = serial_poll();
+    if (serial_key != KEY_NONE) {
+        event.key = serial_key;
+    }
+
     if (mouse_click_pending) {
         event.mouse_click = true;
         event.mouse_x = mouse_x;
@@ -288,24 +386,31 @@ input_event_t input_poll(void) {
         mouse_click_pending = false;
     }
 
-    if ((inb(PS2_STATUS) & 0x01) == 0) {
-        return event;
-    }
-
-    const uint8_t status = inb(PS2_STATUS);
-    const uint8_t data = inb(PS2_DATA);
-
-    if (status & 0x20) {
-        mouse_handle_byte(data);
-        if (mouse_click_pending && !event.mouse_click) {
-            event.mouse_click = true;
-            event.mouse_x = mouse_x;
-            event.mouse_y = mouse_y;
-            mouse_click_pending = false;
+    while (ps2_output_ready()) {
+        const uint8_t status = inb(PS2_STATUS);
+        if ((status & 0x01) == 0) {
+            break;
         }
-        return event;
+
+        const uint8_t data = inb(PS2_DATA);
+
+        if (mouse_enabled && (status & 0x20)) {
+            mouse_handle_byte(data);
+            continue;
+        }
+
+        const key_t key = keyboard_handle_byte(data);
+        if (key != KEY_NONE) {
+            event.key = key;
+        }
     }
 
-    event.key = keyboard_handle_byte(data);
+    if (mouse_click_pending && !event.mouse_click) {
+        event.mouse_click = true;
+        event.mouse_x = mouse_x;
+        event.mouse_y = mouse_y;
+        mouse_click_pending = false;
+    }
+
     return event;
 }

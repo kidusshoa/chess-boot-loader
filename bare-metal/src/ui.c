@@ -374,9 +374,9 @@ void ui_run(struct framebuffer* fb) {
     ui_setup_colors();
     chess_board_reset(&state.board);
     ui_update_status(&state);
-    ui_draw(&state, fb);
     input_set_screen_size((int)fb->width, (int)fb->height);
     input_init();
+    ui_draw(&state, fb);
 
     for (;;) {
         const input_event_t event = input_poll();

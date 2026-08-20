@@ -36,5 +36,6 @@ void kernel_main(uint32_t magic, struct multiboot_boot_info* boot_info) {
 
     gfx_bind(&fb);
     gfx_clear(GFX_RGB(0x1A, 0x1A, 0x2E));
+    serial_write_line("kernel: entering ui");
     ui_run(&fb);
 }
