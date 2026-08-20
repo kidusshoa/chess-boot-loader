@@ -3,6 +3,11 @@
 #include "io.h"
 #include "serial.h"
 
+static void vga_write_reg(uint16_t index_port, uint8_t index, uint8_t value) {
+    outb(index_port, index);
+    outb(index_port + 1u, value);
+}
+
 static void vga_set_palette_rgb(uint8_t index, uint8_t r, uint8_t g, uint8_t b) {
     outb(0x3C8, index);
     outb(0x3C9, r >> 2);
@@ -27,14 +32,14 @@ static void vga_setup_palette(void) {
 static void vga_set_mode_13h(void) {
     outb(0x3C2, 0x63);
 
-    outw(0x3C4, 0x0100);
-    outw(0x3C4, 0x0300);
-    outw(0x3C4, 0x0F02);
-    outw(0x3C4, 0x4006);
+    vga_write_reg(0x3C4, 0x00, 0x03);
+    vga_write_reg(0x3C4, 0x01, 0x00);
+    vga_write_reg(0x3C4, 0x02, 0x0F);
+    vga_write_reg(0x3C4, 0x04, 0x06);
 
-    outw(0x3CE, 0x0204);
-    outw(0x3CE, 0x0005);
-    outw(0x3CE, 0x0406);
+    vga_write_reg(0x3CE, 0x04, 0x00);
+    vga_write_reg(0x3CE, 0x05, 0x40);
+    vga_write_reg(0x3CE, 0x06, 0x05);
 
     outb(0x3D4, 0x11);
     outb(0x3D5, inb(0x3D5) & 0x7F);

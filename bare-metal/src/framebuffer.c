@@ -20,34 +20,27 @@ static int framebuffer_from_multiboot_tag(struct framebuffer* fb, struct multibo
             break;
         }
 
-            if (tag->type == MULTIBOOT_TAG_TYPE_FRAMEBUFFER &&
-                tag->size >= sizeof(struct multiboot_tag_framebuffer)) {
-                struct multiboot_tag_framebuffer* fb_tag = (struct multiboot_tag_framebuffer*)tag;
+        if (tag->type == MULTIBOOT_TAG_TYPE_FRAMEBUFFER &&
+            tag->size >= sizeof(struct multiboot_tag_framebuffer)) {
+            struct multiboot_tag_framebuffer* fb_tag = (struct multiboot_tag_framebuffer*)tag;
 
-                if (fb_tag->framebuffer_type == 2 || fb_tag->framebuffer_bpp < 24) {
-                    continue;
-                }
+            if (fb_tag->framebuffer_type == 2 || fb_tag->framebuffer_bpp < 24) {
+                tag_ptr += (tag->size + 7u) & ~7u;
+                continue;
+            }
 
-                fb->address = (uint32_t*)(uintptr_t)fb_tag->framebuffer_addr;
-                fb->width = fb_tag->framebuffer_width;
-                fb->height = fb_tag->framebuffer_height;
-                fb->pitch = fb_tag->framebuffer_pitch;
-                fb->bpp = fb_tag->framebuffer_bpp;
+            fb->address = (uint32_t*)(uintptr_t)fb_tag->framebuffer_addr;
+            fb->width = fb_tag->framebuffer_width;
+            fb->height = fb_tag->framebuffer_height;
+            fb->pitch = fb_tag->framebuffer_pitch;
+            fb->bpp = fb_tag->framebuffer_bpp;
 
-                if (fb->pitch == 0 && fb->width > 0 && fb->bpp > 0) {
-                    fb->pitch = fb->width * ((uint32_t)fb->bpp / 8u);
-                }
+            if (fb->pitch == 0 && fb->width > 0 && fb->bpp > 0) {
+                fb->pitch = fb->width * ((uint32_t)fb->bpp / 8u);
+            }
 
-                if (fb->address && fb->width >= 320 && fb->height >= 200 && fb->bpp >= 24) {
-                serial_write("framebuffer: multiboot ");
-                serial_write_hex32((uint32_t)(uintptr_t)fb->address);
-                serial_write(" ");
-                serial_write_hex32(fb->width);
-                serial_write("x");
-                serial_write_hex32(fb->height);
-                serial_write("x");
-                serial_write_hex32(fb->bpp);
-                serial_write_line("");
+            if (fb->address && fb->width >= 320 && fb->height >= 200 && fb->bpp >= 24) {
+                serial_write_line("framebuffer: multiboot linear");
                 return 1;
             }
         }
@@ -73,12 +66,12 @@ int framebuffer_init(struct framebuffer* fb, struct multiboot_boot_info* boot_in
     fb->pitch = 0;
     fb->bpp = 0;
 
-    if (vga_mode13_init(fb)) {
+    if (bochs_vbe_init(fb, 640, 480, 32)) {
+        serial_write_line("framebuffer: bochs vbe 640x480x32");
         return 1;
     }
 
-    if (bochs_vbe_init(fb, 640, 480, 32)) {
-        serial_write_line("framebuffer: bochs vbe 640x480x32");
+    if (vga_mode13_init(fb)) {
         return 1;
     }
 

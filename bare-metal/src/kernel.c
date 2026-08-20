@@ -2,6 +2,7 @@
 #include "gfx.h"
 #include "kernel.h"
 #include "multiboot2.h"
+#include "paging.h"
 #include "serial.h"
 #include "ui.h"
 
@@ -27,6 +28,9 @@ void kernel_main(uint32_t magic, struct multiboot_boot_info* boot_info) {
             __asm__ volatile("hlt");
         }
     }
+
+    paging_map_framebuffer((uint32_t)(uintptr_t)fb.address);
+    paging_disable();
 
     serial_write_line("kernel: drawing ui");
 
