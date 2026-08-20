@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdint.h>
 
 typedef enum {
     KEY_NONE = 0,
@@ -12,5 +13,13 @@ typedef enum {
     KEY_RESTART,
 } key_t;
 
-void keyboard_init(void);
-key_t keyboard_poll(void);
+typedef struct {
+    key_t key;
+    bool mouse_click;
+    int mouse_x;
+    int mouse_y;
+} input_event_t;
+
+void input_init(void);
+void input_set_screen_size(int width, int height);
+input_event_t input_poll(void);

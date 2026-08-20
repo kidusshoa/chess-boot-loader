@@ -20,6 +20,7 @@ qemu-system-i386 \
     -serial "file:${SERIAL_LOG}" \
     -vga std \
     -display cocoa \
+    -k en-us \
     -no-reboot \
     -no-shutdown
 

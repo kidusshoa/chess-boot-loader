@@ -209,7 +209,7 @@ static void ui_draw(ui_state_t* state, struct framebuffer* fb) {
         font_draw_string(
             state->board_x,
             status_y + 10,
-            "Arrows move  Space select  R restart",
+            "Click or Space/Enter to move  Arrows/WASD  R restart",
             g_color_status_dim
         );
     }
@@ -264,6 +264,40 @@ static void ui_try_select_or_move(ui_state_t* state) {
     }
 
     ui_clear_selection(state);
+}
+
+static void ui_screen_to_square(const ui_state_t* state, int x, int y, int* file, int* rank) {
+    *file = -1;
+    *rank = -1;
+
+    if (x < state->board_x || y < state->board_y) {
+        return;
+    }
+
+    const int rel_x = x - state->board_x;
+    const int rel_y = y - state->board_y;
+    const int board_pixels = state->square_size * 8;
+
+    if (rel_x >= board_pixels || rel_y >= board_pixels) {
+        return;
+    }
+
+    *file = rel_x / state->square_size;
+    *rank = 7 - (rel_y / state->square_size);
+}
+
+static void ui_handle_click(ui_state_t* state, int x, int y) {
+    int file = -1;
+    int rank = -1;
+
+    ui_screen_to_square(state, x, y, &file, &rank);
+    if (file < 0 || rank < 0) {
+        return;
+    }
+
+    state->cursor_file = file;
+    state->cursor_rank = rank;
+    ui_try_select_or_move(state);
 }
 
 static void ui_handle_key(ui_state_t* state, key_t key) {
@@ -341,12 +375,24 @@ void ui_run(struct framebuffer* fb) {
     chess_board_reset(&state.board);
     ui_update_status(&state);
     ui_draw(&state, fb);
-    keyboard_init();
+    input_set_screen_size((int)fb->width, (int)fb->height);
+    input_init();
 
     for (;;) {
-        const key_t key = keyboard_poll();
-        if (key != KEY_NONE) {
-            ui_handle_key(&state, key);
+        const input_event_t event = input_poll();
+        bool redraw = false;
+
+        if (event.key != KEY_NONE) {
+            ui_handle_key(&state, event.key);
+            redraw = true;
+        }
+
+        if (event.mouse_click) {
+            ui_handle_click(&state, event.mouse_x, event.mouse_y);
+            redraw = true;
+        }
+
+        if (redraw) {
             ui_draw(&state, fb);
         }
 
